@@ -64,22 +64,37 @@ CREATE TABLE differences (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- جدول الصمون الكهربائي
+CREATE TABLE electric_bread (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    jerq_count INTEGER NOT NULL DEFAULT 0 CHECK (jerq_count >= 0),
+    jerq_total NUMERIC(12,2) NOT NULL DEFAULT 0,
+    circle_count INTEGER NOT NULL DEFAULT 0 CHECK (circle_count >= 0),
+    circle_total NUMERIC(12,2) NOT NULL DEFAULT 0,
+    total_profit NUMERIC(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- الخطوة 4: إضافة فهارس
 CREATE INDEX idx_daily_bakes_date ON daily_bakes(date);
 CREATE INDEX idx_expenses_date ON expenses(date);
 CREATE INDEX idx_differences_date ON differences(date);
+CREATE INDEX idx_electric_bread_date ON electric_bread(date);
 
 -- الخطوة 5: تفعيل RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_bakes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE differences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE electric_bread ENABLE ROW LEVEL SECURITY;
 
 -- الخطوة 6: إنشاء السياسات
 CREATE POLICY "users_all" ON users FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "daily_bakes_all" ON daily_bakes FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "expenses_all" ON expenses FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "differences_all" ON differences FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "electric_bread_all" ON electric_bread FOR ALL USING (true) WITH CHECK (true);
 
 -- الخطوة 7: إضافة المستخدم الافتراضي
 -- ⚠️ غيّر البريد الإلكتروني إلى بريدك الحقيقي!
@@ -92,6 +107,13 @@ SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
 
 SELECT 'المستخدم:' as message;
 SELECT username, email FROM users;
+
+-- يجب أن ترى 5 جداول:
+-- ✅ daily_bakes
+-- ✅ differences
+-- ✅ electric_bread
+-- ✅ expenses
+-- ✅ users
 
 -- ✅ انتهى!
 

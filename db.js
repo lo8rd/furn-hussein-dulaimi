@@ -372,33 +372,104 @@ class Database {
     }
 
     // ========================================
-    // ⚠️ جدول الصمون الكهربائي تم إزالته (Electric Bread Removed)
+    // جدول الصمون الكهربائي (Electric Bread Operations)
     // ========================================
-    // استخدم daily_bakes أو differences بدلاً من ذلك
     
     async addElectricBread(data) {
-        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
-        throw new Error('Electric bread table no longer exists. Please use daily_bakes or differences.');
+        const jerqTotal = (parseInt(data.jerq_count) || 0) * 250;
+        const circleTotal = this.calculateCirclePrice(parseInt(data.circle_count) || 0);
+
+        const { data: result, error } = await this.supabase
+            .from('electric_bread')
+            .insert([{
+                date: data.date,
+                jerq_count: parseInt(data.jerq_count) || 0,
+                jerq_total: jerqTotal,
+                circle_count: parseInt(data.circle_count) || 0,
+                circle_total: circleTotal,
+                total_profit: jerqTotal + circleTotal
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding electric bread:', error);
+            throw error;
+        }
+        return result;
     }
 
     async getAllElectricBread() {
-        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
-        return [];
+        const { data, error } = await this.supabase
+            .from('electric_bread')
+            .select('*')
+            .order('date', { ascending: false });
+
+        if (error) {
+            console.error('Error getting electric bread:', error);
+            return [];
+        }
+        
+        // Add total_profit_day field for compatibility with frontend
+        return (data || []).map(item => ({
+            ...item,
+            total_profit_day: item.total_profit
+        }));
     }
 
     async getElectricBreadByDate(date) {
-        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
-        return [];
+        const { data, error } = await this.supabase
+            .from('electric_bread')
+            .select('*')
+            .eq('date', date);
+
+        if (error) {
+            console.error('Error getting electric bread by date:', error);
+            return [];
+        }
+        
+        // Add total_profit_day field for compatibility with frontend
+        return (data || []).map(item => ({
+            ...item,
+            total_profit_day: item.total_profit
+        }));
     }
 
     async updateElectricBread(id, data) {
-        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
-        throw new Error('Electric bread table no longer exists. Please use daily_bakes or differences.');
+        const jerqTotal = (parseInt(data.jerq_count) || 0) * 250;
+        const circleTotal = this.calculateCirclePrice(parseInt(data.circle_count) || 0);
+
+        const { data: result, error } = await this.supabase
+            .from('electric_bread')
+            .update({
+                date: data.date,
+                jerq_count: parseInt(data.jerq_count) || 0,
+                jerq_total: jerqTotal,
+                circle_count: parseInt(data.circle_count) || 0,
+                circle_total: circleTotal,
+                total_profit: jerqTotal + circleTotal
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating electric bread:', error);
+            throw error;
+        }
+        return result;
     }
 
     async deleteElectricBread(id) {
-        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
-        throw new Error('Electric bread table no longer exists. Please use daily_bakes or differences.');
+        const { error } = await this.supabase
+            .from('electric_bread')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting electric bread:', error);
+            throw error;
+        }
     }
 
     // حساب سعر الدائري

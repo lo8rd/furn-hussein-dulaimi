@@ -75,6 +75,18 @@ CREATE TABLE differences (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ⚡ Electric Bread
+CREATE TABLE electric_bread (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    jerq_count INTEGER NOT NULL DEFAULT 0 CHECK (jerq_count >= 0),
+    jerq_total NUMERIC(12,2) NOT NULL DEFAULT 0,
+    circle_count INTEGER NOT NULL DEFAULT 0 CHECK (circle_count >= 0),
+    circle_total NUMERIC(12,2) NOT NULL DEFAULT 0,
+    total_profit NUMERIC(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 4: Add indexes for performance
 -- ═══════════════════════════════════════════════════════════════════
@@ -82,6 +94,7 @@ CREATE TABLE differences (
 CREATE INDEX idx_daily_bakes_date ON daily_bakes(date);
 CREATE INDEX idx_expenses_date ON expenses(date);
 CREATE INDEX idx_differences_date ON differences(date);
+CREATE INDEX idx_electric_bread_date ON electric_bread(date);
 
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 5: Enable RLS and create policies
@@ -92,6 +105,7 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_bakes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE differences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE electric_bread ENABLE ROW LEVEL SECURITY;
 
 -- Users policies
 CREATE POLICY "users_select" ON users FOR SELECT USING (true);
@@ -116,6 +130,12 @@ CREATE POLICY "differences_select" ON differences FOR SELECT USING (true);
 CREATE POLICY "differences_insert" ON differences FOR INSERT WITH CHECK (true);
 CREATE POLICY "differences_update" ON differences FOR UPDATE USING (true);
 CREATE POLICY "differences_delete" ON differences FOR DELETE USING (true);
+
+-- Electric bread policies
+CREATE POLICY "electric_bread_select" ON electric_bread FOR SELECT USING (true);
+CREATE POLICY "electric_bread_insert" ON electric_bread FOR INSERT WITH CHECK (true);
+CREATE POLICY "electric_bread_update" ON electric_bread FOR UPDATE USING (true);
+CREATE POLICY "electric_bread_delete" ON electric_bread FOR DELETE USING (true);
 
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 6: Insert default user
