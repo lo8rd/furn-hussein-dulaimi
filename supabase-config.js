@@ -7,9 +7,16 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let supabase;
 if (typeof window.supabase !== 'undefined') {
     const { createClient } = window.supabase;
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true
+        }
+    });
+    console.log('✅ Supabase client initialized successfully');
 } else {
-    console.error('Supabase library not loaded from CDN!');
+    console.error('❌ Supabase library not loaded from CDN!');
 }
 
 // تنسيق الأرقام مع فواصل الآلاف

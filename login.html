@@ -326,8 +326,10 @@
                 }
 
                 // Step 2: Create Supabase Auth session (REQUIRED)
-                const userEmail = `${username}@frn.local`;
+                const userEmail = `${username}@furn-system.local`;
                 let authSession = null;
+                
+                console.log('🔐 Attempting to sign in with email:', userEmail);
                 
                 // Try signing in first
                 const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -336,36 +338,87 @@
                 });
 
                 if (signInError) {
-                    console.log('User not in Auth system, creating account...');
+                    console.log('⚠️ Sign in failed:', signInError.message);
+                    console.log('🔄 Creating new Auth account...');
+                    
                     // User doesn't exist in Auth, create account
                     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                         email: userEmail,
                         password: password,
                         options: {
+                            emailRedirectTo: window.location.origin + '/START_HERE.html',
                             data: {
                                 username: username,
-                                user_id: userData.id
+                                user_id: userData.id,
+                                display_name: username
                             }
                         }
                     });
 
                     if (signUpError) {
-                        console.error('Failed to create Supabase Auth session:', signUpError);
+                        console.error('❌ Failed to create Supabase Auth session:', signUpError);
+                        console.error('Error details:', {
+                            message: signUpError.message,
+                            status: signUpError.status,
+                            code: signUpError.code
+                        });
+                        
                         loadingDiv.style.display = 'none';
                         submitBtn.disabled = false;
                         submitBtn.style.opacity = '1';
                         
+                        // Show specific error message
+                        let errorMessage = 'فشل إنشاء جلسة آمنة';
+                        if (signUpError.message.includes('email')) {
+                            errorMessage = 'خطأ في تكوين البريد الإلكتروني. يرجى التواصل مع المسؤول';
+                        } else if (signUpError.message.includes('confirmation')) {
+                            errorMessage = 'يتطلب تأكيد البريد الإلكتروني. يرجى تعطيل Email Confirmation في Supabase';
+                        }
+                        
                         alertContainer.innerHTML = `
                             <div class="alert alert-danger">
                                 <strong>⚠️ خطأ في النظام</strong><br>
-                                فشل إنشاء جلسة آمنة. يرجى المحاولة مرة أخرى
+                                ${errorMessage}<br>
+                                <small style="font-size: 0.8rem; opacity: 0.8;">Error: ${signUpError.message}</small>
                             </div>
                         `;
                         return;
                     }
                     
-                    authSession = signUpData.session;
-                    console.log('✅ Supabase Auth account created successfully');
+                    // Check if email confirmation is required
+                    if (signUpData.user && !signUpData.session) {
+                        console.warn('⚠️ Email confirmation required but no session created');
+                        console.warn('User created but needs email confirmation:', signUpData.user.email);
+                        
+                        // Try to sign in immediately (works if email confirmation is disabled)
+                        const { data: retrySignIn, error: retryError } = await supabase.auth.signInWithPassword({
+                            email: userEmail,
+                            password: password
+                        });
+                        
+                        if (!retryError && retrySignIn.session) {
+                            authSession = retrySignIn.session;
+                            console.log('✅ Successfully signed in after account creation');
+                        } else {
+                            loadingDiv.style.display = 'none';
+                            submitBtn.disabled = false;
+                            submitBtn.style.opacity = '1';
+                            
+                            alertContainer.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <strong>⚠️ يتطلب تأكيد البريد الإلكتروني</strong><br>
+                                    يجب تعطيل "Email Confirmation" في إعدادات Supabase:<br>
+                                    <small style="font-size: 0.85rem;">
+                                    Dashboard → Authentication → Providers → Email → Disable "Confirm email"
+                                    </small>
+                                </div>
+                            `;
+                            return;
+                        }
+                    } else {
+                        authSession = signUpData.session;
+                        console.log('✅ Supabase Auth account created successfully');
+                    }
                 } else {
                     authSession = signInData.session;
                     console.log('✅ Supabase Auth sign in successful');
@@ -373,6 +426,7 @@
 
                 // Verify that we have a valid session
                 if (!authSession) {
+                    console.error('❌ No session created after authentication');
                     loadingDiv.style.display = 'none';
                     submitBtn.disabled = false;
                     submitBtn.style.opacity = '1';
@@ -380,11 +434,17 @@
                     alertContainer.innerHTML = `
                         <div class="alert alert-danger">
                             <strong>⚠️ خطأ في النظام</strong><br>
-                            فشل إنشاء جلسة آمنة. يرجى المحاولة مرة أخرى
+                            فشل إنشاء جلسة آمنة. تحقق من إعدادات Supabase Auth<br>
+                            <small style="font-size: 0.85rem;">يجب تعطيل Email Confirmation في Dashboard</small>
                         </div>
                     `;
                     return;
                 }
+                
+                console.log('✅ Auth session created:', {
+                    user: authSession.user.email,
+                    expiresAt: authSession.expires_at
+                });
 
                 // Step 3: Store convenience data (not used for auth)
                 sessionStorage.setItem('isLoggedIn', 'true');
