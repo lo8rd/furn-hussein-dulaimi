@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حساب الربح النهائي - فرن حسين الدليمي</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button onclick="logout()" class="logout-btn">
+                <span>🚪</span>
+                <span>تسجيل الخروج</span>
+            </button>
+            <h1>📊 حساب الربح النهائي 📊</h1>
+            <p>تقارير وإحصائيات مفصلة</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="index.html">الرئيسية</a></li>
+                <li><a href="dough.html">العجنات اليومية</a></li>
+                <li><a href="electric.html"> الكهربائي</a></li>
+                <li><a href="differences.html">الفروقات</a></li>
+                <li><a href="dough_records.html">سجل العجنات</a></li>
+                <li><a href="expenses.html">المصاريف</a></li>
+                <li><a href="profit.html" class="active">الربح النهائي</a></li>
+            </ul>
+        </nav>
+
+        <!-- اختيار الفترة -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px; text-align: center;">اختر الفترة</h2>
+            
+            <div class="stats-tabs">
+                <button class="tab-btn active" onclick="loadProfitReport('today', event)">اليوم</button>
+                <button class="tab-btn" onclick="loadProfitReport('week', event)">هذا الأسبوع</button>
+                <button class="tab-btn" onclick="loadProfitReport('month', event)">هذا الشهر</button>
+            </div>
+        </div>
+
+        <!-- ملخص الربح -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px; text-align: center;">ملخص الربح</h2>
+            
+            <div class="cards-grid">
+                <div class="card" style="background: linear-gradient(135deg, #2d2d2d 0%, #1a5f3a 100%);">
+                    <div class="card-title">✅ ربح العجنات</div>
+                    <div class="card-value" id="totalDoughProfit">0</div>
+                    <div class="card-label">ألف دينار</div>
+                </div>
+
+                <div class="card" style="background: linear-gradient(135deg, #2d2d2d 0%, #8b4513 100%);">
+                    <div class="card-title">🌾 كلفة الطحين</div>
+                    <div class="card-value" id="totalFlourCost">0</div>
+                    <div class="card-label">ألف دينار</div>
+                </div>
+
+                <div class="card" style="background: linear-gradient(135deg, #2d2d2d 0%, #c82333 100%);">
+                    <div class="card-title">💰 المصاريف</div>
+                    <div class="card-value" id="totalExpenses">0</div>
+                    <div class="card-label">ألف دينار</div>
+                </div>
+
+                <div class="card" style="background: linear-gradient(135deg, #2d2d2d 0%, #FFD700 100%); border: 3px solid var(--gold);">
+                    <div class="card-title" style="color: var(--primary-black);">🏆 صافي الربح</div>
+                    <div class="card-value" id="netProfit" style="color: var(--primary-black); font-size: 3rem;">0</div>
+                    <div class="card-label" style="color: var(--primary-black);">ألف دينار</div>
+                </div>
+            </div>
+
+            <p style="text-align: center; color: var(--light-gray); margin-top: 15px; font-size: 0.9rem;">
+                💡 جميع المبالغ معروضة بالألف دينار للتبسيط (مثلاً: 150 = 150,000 دينار)
+            </p>
+        </div>
+
+        <!-- تفاصيل الحسابات -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px; text-align: center;">تفاصيل الحسابات</h2>
+            
+            <div style="background: var(--primary-black); padding: 30px; border-radius: 10px; font-size: 1.2rem; line-height: 2;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <span>ربح العجنات:</span>
+                    <span style="color: var(--success); font-weight: bold;">+ <span id="detailDoughProfit">0</span> دينار</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <span>كلفة الطحين:</span>
+                    <span style="color: var(--danger); font-weight: bold;">- <span id="detailFlourCost">0</span> دينار</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <span>المصاريف:</span>
+                    <span style="color: var(--danger); font-weight: bold;">- <span id="detailExpenses">0</span> دينار</span>
+                </div>
+                
+                <hr style="border: 2px solid var(--gold); margin: 20px 0;">
+                
+                <div style="display: flex; justify-content: space-between; font-size: 1.5rem; font-weight: bold;">
+                    <span style="color: var(--gold);">صافي الربح:</span>
+                    <span style="color: var(--gold);">= <span id="detailNetProfit">0</span> دينار</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- إحصائيات إضافية -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px; text-align: center;">إحصائيات إضافية</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-title">عدد العجنات</div>
+                    <div class="card-value" id="totalDoughCount">0</div>
+                    <div class="card-label">عجنة</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">متوسط الربح اليومي</div>
+                    <div class="card-value" id="avgDailyProfit">0</div>
+                    <div class="card-label">دينار</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">نسبة الربح</div>
+                    <div class="card-value" id="profitMargin">0</div>
+                    <div class="card-label">%</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">عدد أيام العمل</div>
+                    <div class="card-value" id="workingDays">0</div>
+                    <div class="card-label">يوم</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول المقارنة اليومية -->
+        <div class="table-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">المقارنة اليومية</h2>
+            
+            <div id="dailyComparisonContainer">
+                <table id="dailyComparisonTable">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>العجنات</th>
+                            <th>الربح</th>
+                            <th>الطحين</th>
+                            <th>المصاريف</th>
+                            <th>صافي الربح</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dailyComparisonBody">
+                        <!-- سيتم ملؤه تلقائياً -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- رسالة تحفيزية -->
+        <div class="form-container" style="text-align: center; background: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);">
+            <h2 style="color: var(--primary-black); margin-bottom: 15px;">🎉 بركات الرضا معكم 🎉</h2>
+            <p style="color: var(--primary-black); font-size: 1.2rem; font-weight: 600;">
+                استمروا في العمل الجاد وبارك الله في رزقكم
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="db.js"></script>
+    <script src="auth-check.js"></script>
+    <script>
+        let currentPeriod = 'today';
+
+        // تحميل تقرير الربح
+        async function loadProfitReport(period, e = null) {
+            currentPeriod = period;
+
+            // تحديث الأزرار
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // تفعيل الزر المناسب
+            if (e && e.target) {
+                e.target.classList.add('active');
+            } else {
+                // عند التحميل الأول، تفعيل الزر حسب الفترة
+                const buttons = document.querySelectorAll('.tab-btn');
+                if (period === 'today') buttons[0]?.classList.add('active');
+                else if (period === 'week') buttons[1]?.classList.add('active');
+                else if (period === 'month') buttons[2]?.classList.add('active');
+            }
+
+            // الحصول على البيانات
+            const [doughData, flourData, expensesData] = await Promise.all([
+                db.getAllDough(),
+                db.getAllFlour(),
+                db.getAllExpenses()
+            ]);
+
+            // تحديد الفترة
+            let periodAgo = new Date();
+            if (period === 'today') {
+                periodAgo = new Date();
+            } else if (period === 'week') {
+                periodAgo.setDate(periodAgo.getDate() - 7);
+            } else if (period === 'month') {
+                periodAgo.setMonth(periodAgo.getMonth() - 1);
+            }
+            const periodAgoStr = periodAgo.toISOString().split('T')[0];
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            // تصفية البيانات حسب الفترة
+            let filteredDough, filteredFlour, filteredExpenses;
+
+            if (period === 'today') {
+                filteredDough = doughData.filter(d => d.date === todayStr);
+                filteredFlour = flourData.filter(f => f.date === todayStr);
+                filteredExpenses = expensesData.filter(e => e.date === todayStr);
+            } else {
+                filteredDough = doughData.filter(d => d.date >= periodAgoStr);
+                filteredFlour = flourData.filter(f => f.date >= periodAgoStr);
+                filteredExpenses = expensesData.filter(e => e.date >= periodAgoStr);
+            }
+
+            // حساب المجاميع
+            const totalDoughCount = filteredDough.reduce((sum, d) => sum + d.morning_count + d.evening_count, 0);
+            const totalDoughProfit = filteredDough.reduce((sum, d) => sum + d.total_profit, 0);
+            const totalFlourCost = filteredFlour.reduce((sum, f) => sum + f.total_cost, 0);
+            const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+            const netProfit = totalDoughProfit - totalFlourCost - totalExpenses;
+
+            // تحديث البطاقات الرئيسية
+            animateNumber('totalDoughProfit', totalDoughProfit, true);
+            animateNumber('totalFlourCost', totalFlourCost, true);
+            animateNumber('totalExpenses', totalExpenses, true);
+            animateNumber('netProfit', netProfit, true);
+
+            // تحديث تفاصيل الحسابات
+            document.getElementById('detailDoughProfit').textContent = formatThousands(totalDoughProfit);
+            document.getElementById('detailFlourCost').textContent = formatThousands(totalFlourCost);
+            document.getElementById('detailExpenses').textContent = formatThousands(totalExpenses);
+            document.getElementById('detailNetProfit').textContent = formatThousands(netProfit);
+
+            // تحديث الإحصائيات الإضافية
+            const workingDays = filteredDough.length;
+            const avgDailyProfit = workingDays > 0 ? netProfit / workingDays : 0;
+            const profitMargin = totalDoughProfit > 0 ? (netProfit / totalDoughProfit) * 100 : 0;
+
+            document.getElementById('totalDoughCount').textContent = formatNumber(totalDoughCount, 0);
+            document.getElementById('avgDailyProfit').textContent = formatThousands(avgDailyProfit);
+            document.getElementById('profitMargin').textContent = profitMargin.toFixed(1);
+            document.getElementById('workingDays').textContent = formatNumber(workingDays, 0);
+
+            // تحديث جدول المقارنة اليومية
+            loadDailyComparison(period);
+        }
+
+        // تحميل جدول المقارنة اليومية
+        function loadDailyComparison(period) {
+            const doughData = db.getAllDough();
+            const flourData = db.getAllFlour();
+            const expensesData = db.getAllExpenses();
+
+            // تحديد الفترة
+            let periodAgo = new Date();
+            if (period === 'today') {
+                periodAgo = new Date();
+            } else if (period === 'week') {
+                periodAgo.setDate(periodAgo.getDate() - 7);
+            } else if (period === 'month') {
+                periodAgo.setMonth(periodAgo.getMonth() - 1);
+            }
+            const periodAgoStr = periodAgo.toISOString().split('T')[0];
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            // جمع كل التواريخ
+            const allDates = new Set();
+            
+            if (period === 'today') {
+                allDates.add(todayStr);
+            } else {
+                doughData.forEach(d => {
+                    if (d.date >= periodAgoStr) allDates.add(d.date);
+                });
+                flourData.forEach(f => {
+                    if (f.date >= periodAgoStr) allDates.add(f.date);
+                });
+                expensesData.forEach(e => {
+                    if (e.date >= periodAgoStr) allDates.add(e.date);
+                });
+            }
+
+            const sortedDates = Array.from(allDates).sort((a, b) => new Date(b) - new Date(a));
+
+            const tbody = document.getElementById('dailyComparisonBody');
+
+            if (sortedDates.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <p>لا توجد بيانات لهذه الفترة</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = sortedDates.map(date => {
+                const dough = doughData.find(d => d.date === date);
+                const flour = flourData.find(f => f.date === date);
+                const dayExpenses = expensesData.filter(e => e.date === date);
+
+                const doughCount = dough ? dough.morning_count + dough.evening_count : 0;
+                const profit = dough ? dough.total_profit : 0;
+                const flourCost = flour ? flour.total_cost : 0;
+                const expenseCost = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+                const netProfit = profit - flourCost - expenseCost;
+
+                const profitColor = netProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+                return `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${formatNumber(doughCount, 0)}</td>
+                        <td>${formatThousands(profit)}</td>
+                        <td>${formatThousands(flourCost)}</td>
+                        <td>${formatThousands(expenseCost)}</td>
+                        <td style="color: ${profitColor}; font-weight: bold;">${formatThousands(netProfit)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // تحريك الأرقام (Animation)
+        function animateNumber(elementId, targetValue, useThousands = false) {
+            const element = document.getElementById(elementId);
+            const startValue = 0;
+            const duration = 1000;
+            const targetNum = parseFloat(targetValue);
+            const increment = targetNum / (duration / 16);
+            let currentValue = startValue;
+
+            const timer = setInterval(() => {
+                currentValue += increment;
+                if ((increment > 0 && currentValue >= targetNum) || (increment < 0 && currentValue <= targetNum)) {
+                    currentValue = targetNum;
+                    clearInterval(timer);
+                }
+                if (useThousands) {
+                    element.textContent = formatThousands(currentValue);
+                } else {
+                    element.textContent = formatNumber(currentValue);
+                }
+            }, 16);
+        }
+
+        // تحميل البيانات عند فتح الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadProfitReport('today');
+        });
+    </script>
+</body>
+</html>
+

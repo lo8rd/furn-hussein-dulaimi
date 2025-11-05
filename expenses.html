@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المصاريف - فرن حسين الدليمي</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button onclick="logout()" class="logout-btn">
+                <span>🚪</span>
+                <span>تسجيل الخروج</span>
+            </button>
+            <h1>💰 المصاريف 💰</h1>
+            <p>تسجيل مصاريف الفرن اليومية</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="index.html">الرئيسية</a></li>
+                <li><a href="dough.html">العجنات اليومية</a></li>
+                <li><a href="electric.html"> الكهربائي</a></li>
+                <li><a href="differences.html">الفروقات</a></li>
+                <li><a href="dough_records.html">سجل العجنات</a></li>
+                <li><a href="expenses.html" class="active">المصاريف</a></li>
+                <li><a href="profit.html">الربح النهائي</a></li>
+            </ul>
+        </nav>
+
+        <!-- نموذج إضافة مصروف جديد -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">إضافة مصروف جديد</h2>
+            
+            <div id="alertMessage"></div>
+
+            <form id="expensesForm">
+                <div class="form-group">
+                    <label for="date">التاريخ</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="expenseName">اسم المصروف</label>
+                    <input type="text" id="expenseName" name="expenseName" placeholder="مثال: محمد، كهرباء، صيانة، وقود..." required>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">المبلغ (دينار)</label>
+                    <input type="text" id="amount" name="amount" placeholder="مثال: 5,000 أو 1250" required>
+                    <small style="color: var(--light-gray); display: block; margin-top: 5px;">
+                        يمكنك استخدام فواصل الألوف مثل: 1,250 أو كتابة الرقم مباشرة: 5000
+                    </small>
+                </div>
+
+                <div class="cards-grid" style="grid-template-columns: 1fr;">
+                    <div class="card">
+                        <div class="card-title">معاينة المبلغ</div>
+                        <div class="card-value" id="displayAmount">0</div>
+                        <div class="card-label">دينار</div>
+                    </div>
+                </div>
+
+                <p style="text-align: center; color: var(--light-gray); margin-top: 15px; font-size: 0.9rem;">
+                    💡 أدخل الرقم الكامل مع إمكانية استخدام فواصل الألوف (مثلاً: 5,000 أو 5000)
+                </p>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-success">حفظ المصروف</button>
+                    <button type="button" class="btn btn-primary" onclick="resetForm()">مسح الحقول</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- جدول سجل المصاريف -->
+        <div class="table-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">سجل المصاريف</h2>
+            
+            <div id="expensesTableContainer">
+                <table id="expensesTable">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>اسم المصروف</th>
+                            <th>المبلغ الإجمالي</th>
+                            <th>عدد المرات</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTableBody">
+                        <!-- سيتم ملؤه تلقائياً -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal لعرض تفاصيل المصروف -->
+        <div id="detailsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+            <div style="background: var(--secondary-black); padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; border: 2px solid var(--gold);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: var(--gold); margin: 0;">تفاصيل المصروف</h2>
+                    <button onclick="closeDetailsModal()" style="background: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: 'Cairo', sans-serif; font-weight: bold;">إغلاق</button>
+                </div>
+                
+                <div id="modalContent"></div>
+            </div>
+        </div>
+
+        <!-- إحصائيات المصاريف -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">إحصائيات المصاريف</h2>
+            
+            <div class="stats-tabs">
+                <button class="tab-btn active" onclick="loadExpenseStats('today', event)">اليوم</button>
+                <button class="tab-btn" onclick="loadExpenseStats('week', event)">هذا الأسبوع</button>
+                <button class="tab-btn" onclick="loadExpenseStats('month', event)">هذا الشهر</button>
+            </div>
+
+            <div class="cards-grid" style="margin-top: 20px;">
+                <div class="card">
+                    <div class="card-title">عدد المصاريف</div>
+                    <div class="card-value" id="expenseCount">0</div>
+                    <div class="card-label">مصروف</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">إجمالي المصاريف</div>
+                    <div class="card-value" id="totalExpenses">0</div>
+                    <div class="card-label">دينار</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">أعلى مصروف</div>
+                    <div class="card-value" id="maxExpense">0</div>
+                    <div class="card-label">دينار</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">متوسط المصروف</div>
+                    <div class="card-value" id="avgExpense">0</div>
+                    <div class="card-label">دينار</div>
+                </div>
+            </div>
+
+            <!-- أكثر المصاريف تكراراً -->
+            <div id="topExpensesContainer" style="margin-top: 30px;">
+                <h3 style="color: var(--gold); margin-bottom: 15px; text-align: center;">أكثر المصاريف تكراراً</h3>
+                <div id="topExpensesList" style="background: var(--primary-black); padding: 20px; border-radius: 10px;">
+                    <!-- سيتم ملؤه تلقائياً -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="db.js"></script>
+    <script src="auth-check.js"></script>
+    <script>
+        let editingId = null;
+        let currentStatsPeriod = 'today';
+
+        // تعيين التاريخ الحالي تلقائياً
+        document.getElementById('date').valueAsDate = new Date();
+
+        // معالج الإدخال - السماح بفواصل الألوف
+        document.getElementById('amount').addEventListener('input', function(e) {
+            let value = this.value;
+            
+            // السماح فقط بالأرقام والنقطة العشرية والفاصلة
+            value = value.replace(/[^0-9.,]/g, '');
+            
+            // استبدال الفاصلة العربية بالنقطة في المعالجة الداخلية
+            value = value.replace(/،/g, ',');
+            
+            // تحديث القيمة إذا تغيرت
+            if (value !== this.value) {
+                const cursorPosition = this.selectionStart;
+                this.value = value;
+                // الحفاظ على موقع المؤشر
+                this.setSelectionRange(cursorPosition, cursorPosition);
+            }
+            
+            // تحويل إلى رقم (إزالة فواصل الألوف للحساب)
+            const numericValue = value.replace(/,/g, '');
+            const amount = parseFloat(numericValue) || 0;
+            
+            // عرض الرقم مع فواصل الألوف في البطاقة
+            document.getElementById('displayAmount').textContent = formatNumber(amount);
+        });
+
+        // حفظ البيانات
+        document.getElementById('expensesForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const expenseName = document.getElementById('expenseName').value.trim();
+            if (!expenseName) {
+                showAlert('الرجاء إدخال اسم المصروف!', 'danger');
+                return;
+            }
+
+            // قراءة المبلغ وتحويله من الرقم الكامل إلى الألف
+            let amountValue = document.getElementById('amount').value.replace(/,/g, ''); // إزالة فواصل الألوف
+            const amountFull = parseFloat(amountValue) || 0;
+            const amountInThousands = amountFull / 1000; // تحويل إلى الألف
+
+            const formData = {
+                date: document.getElementById('date').value,
+                expense_name: expenseName,
+                amount: amountInThousands
+            };
+
+            try {
+                if (editingId) {
+                    // تحديث السجل
+                    await db.updateExpense(editingId, formData);
+                    showAlert('تم تحديث المصروف بنجاح!', 'success');
+                    editingId = null;
+                } else {
+                    // إضافة سجل جديد
+                    await db.addExpense(formData);
+                    showAlert('تم حفظ المصروف بنجاح!', 'success');
+                }
+
+                resetForm();
+                await loadExpensesTable();
+                await loadExpenseStats(currentStatsPeriod);
+            } catch (error) {
+                console.error('Error saving expense:', error);
+                showAlert('حدث خطأ أثناء الحفظ: ' + error.message, 'danger');
+            }
+        });
+
+        // مسح الحقول
+        function resetForm() {
+            document.getElementById('expensesForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+            document.getElementById('displayAmount').textContent = '0';
+            editingId = null;
+        }
+
+        // عرض رسالة تنبيه
+        function showAlert(message, type) {
+            const alertDiv = document.getElementById('alertMessage');
+            alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        // تحميل جدول المصاريف مع التجميع
+        async function loadExpensesTable() {
+            const expenses = (await db.getAllExpenses()).sort((a, b) => {
+                if (b.date === a.date) {
+                    return b.id - a.id;
+                }
+                return new Date(b.date) - new Date(a.date);
+            });
+            const tbody = document.getElementById('expensesTableBody');
+
+            if (expenses.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <p>لا توجد مصاريف مسجلة بعد</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // تجميع المصاريف حسب التاريخ والاسم
+            const grouped = {};
+            expenses.forEach(record => {
+                const key = `${record.date}_${record.expense_name}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        date: record.date,
+                        expense_name: record.expense_name,
+                        total: 0,
+                        count: 0,
+                        details: []
+                    };
+                }
+                grouped[key].total += record.amount;
+                grouped[key].count++;
+                grouped[key].details.push(record);
+            });
+
+            // تحويل إلى array وترتيب
+            const groupedArray = Object.values(grouped).sort((a, b) => {
+                if (b.date === a.date) {
+                    return b.details[0].id - a.details[0].id;
+                }
+                return new Date(b.date) - new Date(a.date);
+            });
+
+            tbody.innerHTML = groupedArray.map(group => {
+                const hasMultiple = group.count > 1;
+                const detailsKey = `${group.date}_${group.expense_name}`;
+                
+                return `
+                    <tr>
+                        <td>${group.date}</td>
+                        <td><strong>${group.expense_name}</strong></td>
+                        <td><strong style="color: var(--gold);">${formatThousands(group.total)}</strong></td>
+                        <td>${group.count} ${group.count > 1 ? 'مرات' : 'مرة'}</td>
+                        <td>
+                            ${hasMultiple ? 
+                                `<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem; margin-bottom: 5px;" onclick="showDetails('${detailsKey}')">عرض التفاصيل</button><br>` 
+                                : ''}
+                            ${group.count === 1 ? 
+                                `<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editExpense(${group.details[0].id})">تعديل</button>
+                                 <button class="btn btn-danger" onclick="deleteExpense(${group.details[0].id})">حذف</button>`
+                                : `<button class="btn btn-danger" onclick="deleteGroupExpenses('${detailsKey}')">حذف الكل</button>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // حفظ البيانات للاستخدام في التفاصيل
+            window.groupedExpenses = grouped;
+        }
+
+        // عرض تفاصيل المصروف
+        function showDetails(key) {
+            const group = window.groupedExpenses[key];
+            if (!group) return;
+
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('modalContent');
+
+            content.innerHTML = `
+                <div style="margin-bottom: 20px; padding: 15px; background: var(--primary-black); border-radius: 10px;">
+                    <h3 style="color: var(--gold); margin-bottom: 10px;">${group.expense_name}</h3>
+                    <p style="color: var(--light-gray);">التاريخ: ${group.date}</p>
+                    <p style="color: var(--light-gray);">عدد المرات: ${group.count}</p>
+                    <p style="color: var(--gold); font-size: 1.3rem; font-weight: bold;">الإجمالي: ${formatThousands(group.total)} دينار</p>
+                </div>
+
+                <h3 style="color: var(--gold); margin-bottom: 15px;">التفاصيل:</h3>
+                
+                ${group.details.map((detail, index) => `
+                    <div style="background: var(--primary-black); padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: var(--white); font-weight: bold;">المرة ${index + 1}</div>
+                            <div style="color: var(--gold); font-size: 1.2rem; margin-top: 5px;">${formatThousands(detail.amount)} دينار</div>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.9rem; margin-left: 5px;" onclick="editExpenseFromModal(${detail.id})">تعديل</button>
+                            <button class="btn btn-danger" style="padding: 5px 15px; font-size: 0.9rem;" onclick="deleteExpenseFromModal(${detail.id})">حذف</button>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // إغلاق Modal
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+        }
+
+        // تعديل من Modal
+        function editExpenseFromModal(id) {
+            closeDetailsModal();
+            editExpense(id);
+        }
+
+        // حذف من Modal
+        async function deleteExpenseFromModal(id) {
+            if (confirm('هل أنت متأكد من حذف هذا المصروف؟')) {
+                try {
+                    await db.deleteExpense(id);
+                    showAlert('تم حذف المصروف بنجاح!', 'success');
+                    closeDetailsModal();
+                    await loadExpensesTable();
+                    await loadExpenseStats(currentStatsPeriod);
+                } catch (error) {
+                    console.error('Error deleting expense:', error);
+                    showAlert('حدث خطأ أثناء الحذف', 'danger');
+                }
+            }
+        }
+
+        // حذف مجموعة كاملة
+        async function deleteGroupExpenses(key) {
+            const group = window.groupedExpenses[key];
+            if (!group) return;
+
+            if (confirm(`هل أنت متأكد من حذف جميع مصاريف "${group.expense_name}" في ${group.date}؟\n(${group.count} مصاريف - إجمالي ${formatThousands(group.total)} دينار)`)) {
+                try {
+                    for (const detail of group.details) {
+                        await db.deleteExpense(detail.id);
+                    }
+                    showAlert('تم حذف جميع المصاريف بنجاح!', 'success');
+                    await loadExpensesTable();
+                    await loadExpenseStats(currentStatsPeriod);
+                } catch (error) {
+                    console.error('Error deleting expenses:', error);
+                    showAlert('حدث خطأ أثناء الحذف', 'danger');
+                }
+            }
+        }
+
+        // إغلاق Modal عند الضغط خارج المحتوى
+        document.getElementById('detailsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDetailsModal();
+            }
+        });
+
+        // تحميل إحصائيات المصاريف
+        async function loadExpenseStats(period, e = null) {
+            currentStatsPeriod = period;
+            
+            // تحديث الأزرار
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // تفعيل الزر المناسب
+            if (e && e.target) {
+                e.target.classList.add('active');
+            } else {
+                // عند التحميل الأول، تفعيل الزر حسب الفترة
+                const buttons = document.querySelectorAll('.tab-btn');
+                if (period === 'today') buttons[0]?.classList.add('active');
+                else if (period === 'week') buttons[1]?.classList.add('active');
+                else if (period === 'month') buttons[2]?.classList.add('active');
+            }
+
+            const expenses = await db.getAllExpenses();
+            
+            // حساب الفترة المطلوبة
+            let periodAgo = new Date();
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (period === 'today') {
+                periodAgo = new Date();
+            } else if (period === 'week') {
+                periodAgo.setDate(periodAgo.getDate() - 7);
+            } else if (period === 'month') {
+                periodAgo.setMonth(periodAgo.getMonth() - 1);
+            }
+            const periodAgoStr = periodAgo.toISOString().split('T')[0];
+            
+            const periodExpenses = period === 'today' 
+                ? expenses.filter(e => e.date === today)
+                : expenses.filter(e => e.date >= periodAgoStr);
+            
+            // الإحصائيات
+            const count = periodExpenses.length;
+            const total = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
+            const max = count > 0 ? Math.max(...periodExpenses.map(e => e.amount)) : 0;
+            const avg = count > 0 ? total / count : 0;
+
+            document.getElementById('expenseCount').textContent = formatNumber(count, 0);
+            document.getElementById('totalExpenses').textContent = formatThousands(total);
+            document.getElementById('maxExpense').textContent = formatThousands(max);
+            document.getElementById('avgExpense').textContent = formatThousands(avg);
+
+            // أكثر المصاريف تكراراً
+            loadTopExpenses(periodExpenses);
+        }
+
+        // تحميل أكثر المصاريف تكراراً
+        function loadTopExpenses(expenses) {
+            if (expenses.length === 0) {
+                document.getElementById('topExpensesList').innerHTML = `
+                    <p style="text-align: center; color: var(--light-gray);">لا توجد بيانات لعرضها</p>
+                `;
+                return;
+            }
+
+            // جمع المصاريف حسب الاسم
+            const expensesByName = {};
+            expenses.forEach(e => {
+                const name = e.expense_name;
+                if (!expensesByName[name]) {
+                    expensesByName[name] = {
+                        name: name,
+                        count: 0,
+                        total: 0
+                    };
+                }
+                expensesByName[name].count++;
+                expensesByName[name].total += e.amount;
+            });
+
+            // ترتيب حسب الإجمالي
+            const sorted = Object.values(expensesByName).sort((a, b) => b.total - a.total);
+            const top5 = sorted.slice(0, 5);
+
+            document.getElementById('topExpensesList').innerHTML = top5.map((item, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 10px; background: var(--secondary-black); border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span style="font-size: 1.5rem; color: var(--gold); font-weight: bold;">${index + 1}</span>
+                        <div>
+                            <div style="color: var(--white); font-weight: bold;">${item.name}</div>
+                            <div style="color: var(--light-gray); font-size: 0.9rem;">${item.count} مرة</div>
+                        </div>
+                    </div>
+                    <div style="text-align: left;">
+                        <div style="color: var(--gold); font-size: 1.3rem; font-weight: bold;">${formatThousands(item.total)}</div>
+                        <div style="color: var(--light-gray); font-size: 0.9rem;">دينار</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // تعديل مصروف
+        async function editExpense(id) {
+            const expenses = await db.getAllExpenses();
+            const record = expenses.find(e => e.id === id);
+            
+            if (record) {
+                // تحويل من الألف إلى الرقم الكامل للعرض في الحقل
+                const amountFull = record.amount * 1000;
+                
+                document.getElementById('date').value = record.date;
+                document.getElementById('expenseName').value = record.expense_name;
+                document.getElementById('amount').value = formatNumber(amountFull); // عرض الرقم الكامل مع فواصل
+                document.getElementById('displayAmount').textContent = formatNumber(amountFull);
+                editingId = id;
+                
+                // التمرير للأعلى
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // حذف مصروف
+        async function deleteExpense(id) {
+            if (confirm('هل أنت متأكد من حذف هذا المصروف؟')) {
+                try {
+                    await db.deleteExpense(id);
+                    showAlert('تم حذف المصروف بنجاح!', 'success');
+                    await loadExpensesTable();
+                    await loadExpenseStats(currentStatsPeriod);
+                } catch (error) {
+                    console.error('Error deleting expense:', error);
+                    showAlert('حدث خطأ أثناء الحذف', 'danger');
+                }
+            }
+        }
+
+        // تحميل البيانات عند فتح الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadExpensesTable();
+            await loadExpenseStats('today');
+        });
+    </script>
+</body>
+</html>

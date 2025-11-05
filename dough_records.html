@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل العجنات - فرن حسين الدليمي</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button onclick="logout()" class="logout-btn">
+                <span>🚪</span>
+                <span>تسجيل الخروج</span>
+            </button>
+            <h1>📚 سجل العجنات 📚</h1>
+            <p>سجل كامل لجميع العجنات السابقة</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="index.html">الرئيسية</a></li>
+                <li><a href="dough.html">العجنات اليومية</a></li>
+                <li><a href="electric.html"> الكهربائي</a></li>
+                <li><a href="differences.html">الفروقات</a></li>
+                <li><a href="dough_records.html" class="active">سجل العجنات</a></li>
+                <li><a href="expenses.html">المصاريف</a></li>
+                <li><a href="profit.html">الربح النهائي</a></li>
+            </ul>
+        </nav>
+
+        <!-- فلتر البحث -->
+        <div class="search-filter-container">
+            <h2 class="search-title">
+                <span>🔍</span>
+                <span>بحث وفلترة</span>
+            </h2>
+            
+            <!-- اختيار نوع البحث -->
+            <div class="search-type-selector">
+                <label class="radio-option">
+                    <input type="radio" name="searchType" value="single" checked>
+                    <span>🔎 بحث عن يوم محدد</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="searchType" value="range">
+                    <span>📅 بحث حسب نطاق زمني</span>
+                </label>
+            </div>
+
+            <!-- بحث عن يوم محدد -->
+            <div id="singleSearch" class="search-inputs-container">
+                <div class="search-grid">
+                    <div class="search-input-group">
+                        <label for="searchDate" class="search-input-label">
+                            <span>📅</span>
+                            <span>اختر التاريخ</span>
+                        </label>
+                        <input type="date" id="searchDate" class="search-input-field">
+                    </div>
+                    <button class="btn-search" onclick="searchSingleDate()">
+                        <span>🔍</span>
+                        <span>بحث</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- بحث حسب نطاق -->
+            <div id="rangeSearch" class="search-inputs-container" style="display: none;">
+                <div class="search-grid-range">
+                    <div class="search-input-group">
+                        <label for="startDate" class="search-input-label">
+                            <span>📅</span>
+                            <span>من تاريخ</span>
+                        </label>
+                        <input type="date" id="startDate" class="search-input-field">
+                    </div>
+                    
+                    <div class="search-input-group">
+                        <label for="endDate" class="search-input-label">
+                            <span>📅</span>
+                            <span>إلى تاريخ</span>
+                        </label>
+                        <input type="date" id="endDate" class="search-input-field">
+                    </div>
+                    
+                    <div class="search-input-group" style="justify-content: flex-end; display: flex; align-items: flex-end;">
+                        <button class="btn-search" onclick="filterByDateRange()">
+                            <span>📊</span>
+                            <span>بحث</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- زر إعادة تعيين -->
+            <div class="reset-container">
+                <button class="btn-reset" onclick="resetFilter()">
+                    <span>🔄</span>
+                    <span>إعادة تعيين - عرض جميع السجلات</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- عرض الإحصائيات -->
+        <div class="cards-grid" id="statsCards">
+            <div class="card">
+                <div class="card-title">إجمالي الأيام</div>
+                <div class="card-value" id="totalDays">0</div>
+                <div class="card-label">يوم</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">إجمالي العجنات</div>
+                <div class="card-value" id="totalDough">0</div>
+                <div class="card-label">عجنة</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">إجمالي الربح</div>
+                <div class="card-value" id="totalProfit">0</div>
+                <div class="card-label">ألف دينار</div>
+            </div>
+        </div>
+
+        <!-- سجل العجنات مجموعة حسب اليوم -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">📅 السجل التفصيلي</h2>
+            <div id="recordsContainer"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="db.js"></script>
+    <script src="auth-check.js"></script>
+    <script>
+        let allRecords = [];
+
+        // التبديل بين أنواع البحث
+        document.addEventListener('DOMContentLoaded', () => {
+            const radioButtons = document.querySelectorAll('input[name="searchType"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const singleSearch = document.getElementById('singleSearch');
+                    const rangeSearch = document.getElementById('rangeSearch');
+                    
+                    if (this.value === 'single') {
+                        singleSearch.style.display = 'block';
+                        rangeSearch.style.display = 'none';
+                    } else {
+                        singleSearch.style.display = 'none';
+                        rangeSearch.style.display = 'block';
+                    }
+                });
+            });
+            
+            // تحميل السجلات عند فتح الصفحة
+            loadAllRecords();
+        });
+
+        // تحميل جميع السجلات
+        async function loadAllRecords() {
+            try {
+                allRecords = await db.getDoughRecords();
+                displayRecords(allRecords);
+                updateStats(allRecords);
+            } catch (error) {
+                console.error('Error loading records:', error);
+                showAlert('حدث خطأ أثناء تحميل السجلات', 'danger');
+            }
+        }
+
+        // عرض السجلات مجموعة حسب اليوم
+        function displayRecords(records) {
+            const container = document.getElementById('recordsContainer');
+            
+            if (records.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 50px; color: var(--light-gray);">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">📭</div>
+                        <p style="font-size: 1.2rem;">لا توجد سجلات سابقة</p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">سيتم نقل عجنات اليوم السابق تلقائياً في اليوم التالي</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // تجميع السجلات حسب التاريخ
+            const groupedByDate = {};
+            records.forEach(record => {
+                if (!groupedByDate[record.date]) {
+                    groupedByDate[record.date] = [];
+                }
+                groupedByDate[record.date].push(record);
+            });
+
+            // عرض كل يوم في بطاقة منفصلة
+            let html = '';
+            Object.keys(groupedByDate).sort((a, b) => new Date(b) - new Date(a)).forEach(date => {
+                const dayRecords = groupedByDate[date];
+                const dayData = calculateDayData(dayRecords);
+                const dateObj = new Date(date);
+                const dayName = dateObj.toLocaleDateString('ar-EG', { weekday: 'long' });
+                const formattedDate = dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                html += `
+                    <div class="day-record-card" style="background: var(--secondary-black); border: 2px solid var(--gold); border-radius: 15px; padding: 25px; margin-bottom: 25px; animation: slideDown 0.5s ease;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--gold); padding-bottom: 15px;">
+                            <div>
+                                <h3 style="color: var(--gold); font-size: 1.5rem; margin: 0;">
+                                    <span style="font-size: 1.2rem;">📅</span> ${dayName}
+                                </h3>
+                                <p style="color: var(--light-gray); margin: 5px 0 0 0; font-size: 0.95rem;">${formattedDate}</p>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="background: var(--gold); color: var(--primary-black); padding: 8px 15px; border-radius: 8px; font-weight: bold; font-size: 0.9rem;">
+                                    ${dayRecords.length} عجنة
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>الصباح</th>
+                                        <th>المساء</th>
+                                        <th>الإجمالي</th>
+                                        <th>ربح الصباح</th>
+                                        <th>ربح المساء</th>
+                                        <th>الربح الكلي</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${dayRecords.map((record, index) => `
+                                        <tr>
+                                            <td>${index + 1}</td>
+                                            <td>${formatNumber(record.morning_count, 0)}</td>
+                                            <td>${formatNumber(record.evening_count, 0)}</td>
+                                            <td><strong>${formatNumber(record.morning_count + record.evening_count, 0)}</strong></td>
+                                            <td>${formatThousands(record.morning_profit)}</td>
+                                            <td>${formatThousands(record.evening_profit)}</td>
+                                            <td><strong style="color: var(--gold);">${formatThousands(record.total_profit)}</strong></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="background: var(--primary-black); padding: 20px; border-radius: 10px; margin-top: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <div style="text-align: center;">
+                                    <div style="color: var(--light-gray); font-size: 0.9rem; margin-bottom: 5px;">إجمالي العجنات</div>
+                                    <div style="color: var(--white); font-size: 1.5rem; font-weight: bold;">${formatNumber(dayData.totalCount, 0)}</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="color: var(--light-gray); font-size: 0.9rem; margin-bottom: 5px;">ربح الصباح</div>
+                                    <div style="color: var(--gold); font-size: 1.5rem; font-weight: bold;">${formatThousands(dayData.totalMorningProfit)}</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="color: var(--light-gray); font-size: 0.9rem; margin-bottom: 5px;">ربح المساء</div>
+                                    <div style="color: var(--gold); font-size: 1.5rem; font-weight: bold;">${formatThousands(dayData.totalEveningProfit)}</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="color: var(--light-gray); font-size: 0.9rem; margin-bottom: 5px;">الربح الكلي</div>
+                                    <div style="color: var(--success); font-size: 1.8rem; font-weight: bold;">${formatThousands(dayData.totalProfit)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // حساب بيانات اليوم الواحد
+        function calculateDayData(records) {
+            let totalCount = 0;
+            let totalMorningProfit = 0;
+            let totalEveningProfit = 0;
+            let totalProfit = 0;
+
+            records.forEach(record => {
+                totalCount += (record.morning_count + record.evening_count);
+                totalMorningProfit += record.morning_profit;
+                totalEveningProfit += record.evening_profit;
+                totalProfit += record.total_profit;
+            });
+
+            return {
+                totalCount,
+                totalMorningProfit,
+                totalEveningProfit,
+                totalProfit
+            };
+        }
+
+        // تحديث الإحصائيات
+        function updateStats(records) {
+            const uniqueDates = [...new Set(records.map(r => r.date))];
+            let totalCount = 0;
+            let totalProfit = 0;
+
+            records.forEach(record => {
+                totalCount += (record.morning_count + record.evening_count);
+                totalProfit += record.total_profit;
+            });
+
+            document.getElementById('totalDays').textContent = formatNumber(uniqueDates.length, 0);
+            document.getElementById('totalDough').textContent = formatNumber(totalCount, 0);
+            document.getElementById('totalProfit').textContent = formatThousands(totalProfit);
+        }
+
+        // بحث عن يوم محدد
+        async function searchSingleDate() {
+            const searchDate = document.getElementById('searchDate').value;
+
+            if (!searchDate) {
+                showAlert('يرجى اختيار التاريخ', 'danger');
+                return;
+            }
+
+            try {
+                const filtered = await db.getDoughByDate(searchDate);
+                
+                if (filtered.length === 0) {
+                    showAlert('لا توجد عجنات مسجلة في هذا التاريخ', 'danger');
+                    displayRecords([]);
+                    updateStats([]);
+                } else {
+                    displayRecords(filtered);
+                    updateStats(filtered);
+                    
+                    const dateObj = new Date(searchDate);
+                    const dayName = dateObj.toLocaleDateString('ar-EG', { weekday: 'long' });
+                    const formattedDate = dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+                    showAlert(`✅ تم العثور على ${filtered.length} عجنة في ${dayName} - ${formattedDate}`, 'success');
+                }
+            } catch (error) {
+                console.error('Error searching date:', error);
+                showAlert('حدث خطأ أثناء البحث', 'danger');
+            }
+        }
+
+        // فلترة حسب نطاق زمني
+        async function filterByDateRange() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!startDate || !endDate) {
+                showAlert('يرجى اختيار تاريخ البداية والنهاية', 'danger');
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                showAlert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية', 'danger');
+                return;
+            }
+
+            try {
+                const filtered = await db.getDoughRecordsByDateRange(startDate, endDate);
+                
+                if (filtered.length === 0) {
+                    showAlert('لا توجد عجنات في هذا النطاق الزمني', 'danger');
+                    displayRecords([]);
+                    updateStats([]);
+                } else {
+                    displayRecords(filtered);
+                    updateStats(filtered);
+                    
+                    const uniqueDates = [...new Set(filtered.map(r => r.date))];
+                    showAlert(`✅ تم العثور على ${filtered.length} عجنة في ${uniqueDates.length} يوم`, 'success');
+                }
+            } catch (error) {
+                console.error('Error filtering records:', error);
+                showAlert('حدث خطأ أثناء البحث', 'danger');
+            }
+        }
+
+        // إعادة تعيين الفلتر
+        function resetFilter() {
+            document.getElementById('searchDate').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            
+            // إعادة تعيين إلى بحث يوم واحد
+            document.querySelector('input[name="searchType"][value="single"]').checked = true;
+            document.getElementById('singleSearch').style.display = 'grid';
+            document.getElementById('rangeSearch').style.display = 'none';
+            
+            displayRecords(allRecords);
+            updateStats(allRecords);
+            showAlert('✅ تم عرض جميع السجلات', 'success');
+        }
+
+        // عرض رسالة تنبيه
+        function showAlert(message, type) {
+            // إزالة أي رسائل سابقة
+            const existingAlerts = document.querySelectorAll('.alert-notification');
+            existingAlerts.forEach(alert => alert.remove());
+
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-notification`;
+            alertDiv.textContent = message;
+            alertDiv.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 1000; animation: slideDown 0.3s ease; max-width: 400px;';
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+

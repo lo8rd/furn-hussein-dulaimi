@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فرن حسين الدليمي - نظام إدارة الفرن</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button onclick="logout()" class="logout-btn">
+                <span>🚪</span>
+                <span>تسجيل الخروج</span>
+            </button>
+            <h1>🍞 فرن حسين الدليمي 🍞</h1>
+            <p>نظام إدارة الفرن الذكي</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="index.html" class="active">الرئيسية</a></li>
+                <li><a href="dough.html">العجنات اليومية</a></li>
+                <li><a href="electric.html"> الكهربائي</a></li>
+                <li><a href="differences.html">الفروقات</a></li>
+                <li><a href="dough_records.html">سجل العجنات</a></li>
+                <li><a href="expenses.html">المصاريف</a></li>
+                <li><a href="profit.html">الربح النهائي</a></li>
+            </ul>
+        </nav>
+
+        <div class="cards-grid" id="statsCards">
+            <div class="card">
+                <div class="card-title">عجنات اليوم</div>
+                <div class="card-value" id="todayDough">0</div>
+                <div class="card-label">عجنة</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">الربح المتوقع</div>
+                <div class="card-value" id="todayProfit">0</div>
+                <div class="card-label">ألف دينار</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">مصاريف اليوم</div>
+                <div class="card-value" id="todayExpenses">0</div>
+                <div class="card-label">دينار</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">صافي الربح</div>
+                <div class="card-value" id="todayNetProfit">0</div>
+                <div class="card-label">ألف دينار</div>
+            </div>
+        </div>
+
+        <p style="text-align: center; color: var(--light-gray); margin-top: 15px; font-size: 0.9rem;">
+            💡 الأرباح معروضة بالألف دينار للتبسيط | المصاريف بالدينار العادي
+        </p>
+
+        <div class="btn-group">
+            <a href="dough.html" class="btn btn-primary">إضافة عجنات جديدة</a>
+            <a href="profit.html" class="btn btn-primary">عرض التقارير المفصلة</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="db.js"></script>
+    <script src="auth-check.js"></script>
+    <script>
+        // تحديث البيانات عند تحميل الصفحة
+        async function updateDashboard() {
+            const stats = await db.getStats('today');
+            
+            // تحديث البطاقات الرئيسية
+            animateNumber('todayDough', stats.doughCount, 0);
+            animateNumber('todayProfit', stats.profit, 0, true);
+            animateNumber('todayExpenses', (stats.flourCost + stats.expenses), 0, true);
+            animateNumber('todayNetProfit', stats.netProfit, 0, true);
+        }
+
+        // تحريك الأرقام (Animation)
+        function animateNumber(elementId, targetValue, decimals = 2, useThousands = false) {
+            const element = document.getElementById(elementId);
+            const startValue = 0;
+            const duration = 1000; // مدة الأنيميشن بالملي ثانية
+            const increment = targetValue / (duration / 16); // 60fps
+            let currentValue = startValue;
+
+            const timer = setInterval(() => {
+                currentValue += increment;
+                if (currentValue >= targetValue) {
+                    currentValue = targetValue;
+                    clearInterval(timer);
+                }
+                
+                if (useThousands) {
+                    element.textContent = formatThousands(currentValue, decimals);
+                } else if (decimals === 0) {
+                    element.textContent = Math.floor(currentValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                } else {
+                    element.textContent = formatNumber(currentValue);
+                }
+            }, 16);
+        }
+
+        // تحميل البيانات عند فتح الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            await updateDashboard();
+            
+            // تحديث تلقائي كل 30 ثانية
+            setInterval(updateDashboard, 30000);
+        });
+    </script>
+</body>
+</html>
+

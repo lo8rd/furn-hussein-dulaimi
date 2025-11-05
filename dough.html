@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>العجنات اليومية - فرن حسين الدليمي</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button onclick="logout()" class="logout-btn">
+                <span>🚪</span>
+                <span>تسجيل الخروج</span>
+            </button>
+            <h1>🍞 العجنات اليومية 🍞</h1>
+            <p>تسجيل عجنات الصباح والمساء</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="index.html">الرئيسية</a></li>
+                <li><a href="dough.html" class="active">العجنات اليومية</a></li>
+                <li><a href="electric.html"> الكهربائي</a></li>
+                <li><a href="differences.html">الفروقات</a></li>
+                <li><a href="dough_records.html">سجل العجنات</a></li>
+                <li><a href="expenses.html">المصاريف</a></li>
+                <li><a href="profit.html">الربح النهائي</a></li>
+            </ul>
+        </nav>
+
+        <!-- نموذج إضافة عجنات جديدة -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">إضافة عجنات جديدة</h2>
+            
+            <div id="alertMessage"></div>
+
+            <form id="doughForm">
+                <div class="form-group">
+                    <label for="date">التاريخ</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="morningCount">عدد عجنات الصباح</label>
+                    <input type="number" id="morningCount" name="morningCount" min="0" placeholder="أدخل العدد" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="eveningCount">عدد عجنات المساء</label>
+                    <input type="number" id="eveningCount" name="eveningCount" min="0" placeholder="أدخل العدد" required>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-title">ربح الصباح</div>
+                        <div class="card-value" id="morningProfit">0</div>
+                        <div class="card-label">ألف دينار</div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">ربح المساء</div>
+                        <div class="card-value" id="eveningProfit">0</div>
+                        <div class="card-label">ألف دينار</div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">الربح الإجمالي</div>
+                        <div class="card-value" id="totalProfit">0</div>
+                        <div class="card-label">ألف دينار</div>
+                    </div>
+                </div>
+
+                <p style="text-align: center; color: var(--light-gray); margin-top: 15px; font-size: 0.9rem;">
+                    💡 الأرباح معروضة بالألف دينار للتبسيط (مثلاً: 150 = 150,000 دينار)
+                </p>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-success">حفظ العجنات</button>
+                    <button type="button" class="btn btn-primary" onclick="resetForm()">مسح الحقول</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- جدول العجنات المسجلة -->
+        <div class="table-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">سجل العجنات</h2>
+            
+            <div id="doughTableContainer">
+                <table id="doughTable">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الصباح</th>
+                            <th>المساء</th>
+                            <th>الإجمالي</th>
+                            <th>ربح الصباح</th>
+                            <th>ربح المساء</th>
+                            <th>الربح الكلي</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doughTableBody">
+                        <!-- سيتم ملؤه تلقائياً -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="db.js"></script>
+    <script src="auth-check.js"></script>
+    <script>
+        let editingId = null;
+
+        // تعيين التاريخ الحالي تلقائياً
+        document.getElementById('date').valueAsDate = new Date();
+
+        // حساب الربح تلقائياً عند التغيير
+        document.getElementById('morningCount').addEventListener('input', calculateProfit);
+        document.getElementById('eveningCount').addEventListener('input', calculateProfit);
+
+        function calculateProfit() {
+            const morningCount = parseInt(document.getElementById('morningCount').value) || 0;
+            const eveningCount = parseInt(document.getElementById('eveningCount').value) || 0;
+
+            const morningProfit = (morningCount * 10) / 8;
+            const eveningProfit = (eveningCount * 10) / 8;
+            const totalProfit = morningProfit + eveningProfit;
+
+            document.getElementById('morningProfit').textContent = formatThousands(morningProfit);
+            document.getElementById('eveningProfit').textContent = formatThousands(eveningProfit);
+            document.getElementById('totalProfit').textContent = formatThousands(totalProfit);
+        }
+
+        // حفظ البيانات
+        document.getElementById('doughForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                date: document.getElementById('date').value,
+                morning_count: document.getElementById('morningCount').value,
+                evening_count: document.getElementById('eveningCount').value
+            };
+
+            try {
+                if (editingId) {
+                    // تحديث السجل
+                    await db.updateDough(editingId, formData);
+                    showAlert('تم تحديث البيانات بنجاح!', 'success');
+                    editingId = null;
+                } else {
+                    // إضافة سجل جديد
+                    await db.addDough(formData);
+                    showAlert('تم حفظ البيانات بنجاح!', 'success');
+                }
+
+                resetForm();
+                await loadDoughTable();
+            } catch (error) {
+                console.error('Error saving dough:', error);
+                showAlert('حدث خطأ أثناء الحفظ: ' + error.message, 'danger');
+            }
+        });
+
+        // مسح الحقول
+        function resetForm() {
+            document.getElementById('doughForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+            editingId = null;
+            calculateProfit();
+        }
+
+        // عرض رسالة تنبيه
+        function showAlert(message, type) {
+            const alertDiv = document.getElementById('alertMessage');
+            alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        // تحميل جدول العجنات (عجنات اليوم فقط - من الأول إلى الأخير)
+        async function loadDoughTable() {
+            const dough = await db.getTodayDough(); // يتم الترتيب تصاعدياً من الدالة
+            const tbody = document.getElementById('doughTableBody');
+
+            if (dough.length === 0) {
+                const today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <p>لا توجد عجنات مسجلة لهذا اليوم</p>
+                            <p style="font-size: 0.9rem; color: var(--light-gray); margin-top: 10px;">${today}</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = dough.map((record, index) => `
+                <tr>
+                    <td>${record.date}</td>
+                    <td>${formatNumber(record.morning_count, 0)}</td>
+                    <td>${formatNumber(record.evening_count, 0)}</td>
+                    <td><strong>${formatNumber(record.morning_count + record.evening_count, 0)}</strong></td>
+                    <td>${formatThousands(record.morning_profit)}</td>
+                    <td>${formatThousands(record.evening_profit)}</td>
+                    <td><strong>${formatThousands(record.total_profit)}</strong></td>
+                    <td>
+                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editDough(${record.id})">تعديل</button>
+                        <button class="btn btn-danger" onclick="deleteDough(${record.id})">حذف</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // تعديل عجنة
+        async function editDough(id) {
+            const dough = await db.getTodayDough();
+            const record = dough.find(d => d.id === id);
+            
+            if (record) {
+                document.getElementById('date').value = record.date;
+                document.getElementById('morningCount').value = record.morning_count;
+                document.getElementById('eveningCount').value = record.evening_count;
+                calculateProfit();
+                editingId = id;
+                
+                // التمرير للأعلى
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // حذف عجنة
+        async function deleteDough(id) {
+            if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
+                try {
+                    await db.deleteDough(id);
+                    showAlert('تم حذف السجل بنجاح!', 'success');
+                    await loadDoughTable();
+                } catch (error) {
+                    console.error('Error deleting dough:', error);
+                    showAlert('حدث خطأ أثناء الحذف', 'danger');
+                }
+            }
+        }
+
+        // تحميل الجدول عند فتح الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadDoughTable();
+            calculateProfit();
+        });
+    </script>
+</body>
+</html>
+

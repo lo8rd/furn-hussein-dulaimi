@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كلفة الطحين - فرن حسين الدليمي</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button onclick="logout()" class="logout-btn">
+                <span>🚪</span>
+                <span>تسجيل الخروج</span>
+            </button>
+            <h1>🌾 كلفة الطحين 🌾</h1>
+            <p>تسجيل أسعار وكميات الطحين</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="index.html">الرئيسية</a></li>
+                <li><a href="dough.html">العجنات اليومية</a></li>
+                <li><a href="electric.html"> الكهربائي</a></li>
+                <li><a href="differences.html">الفروقات</a></li>
+                <li><a href="flour.html" class="active">كلفة الطحين</a></li>
+                <li><a href="expenses.html">المصاريف</a></li>
+                <li><a href="profit.html">الربح النهائي</a></li>
+            </ul>
+        </nav>
+
+        <!-- نموذج إضافة كلفة طحين جديدة -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">إضافة كلفة طحين جديدة</h2>
+            
+            <div id="alertMessage"></div>
+
+            <form id="flourForm">
+                <div class="form-group">
+                    <label for="date">التاريخ</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="bagPrice">سعر الكيس (بالألف دينار)</label>
+                    <input type="number" id="bagPrice" name="bagPrice" min="0" step="0.01" placeholder="أدخل السعر بالألف" required>
+                    <small style="color: var(--light-gray); display: block; margin-top: 5px;">
+                        مثلاً: اكتب 3.5 بدلاً من 3,500
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="bagCount">عدد الأكياس</label>
+                    <input type="number" id="bagCount" name="bagCount" min="0" placeholder="أدخل العدد" required>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-title">سعر الكيس</div>
+                        <div class="card-value" id="displayBagPrice">0</div>
+                        <div class="card-label">دينار</div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">عدد الأكياس</div>
+                        <div class="card-value" id="displayBagCount">0</div>
+                        <div class="card-label">كيس</div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">الكلفة الإجمالية</div>
+                        <div class="card-value" id="totalCost">0</div>
+                        <div class="card-label">دينار</div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-success">حفظ البيانات</button>
+                    <button type="button" class="btn btn-primary" onclick="resetForm()">مسح الحقول</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- جدول سجل الطحين -->
+        <div class="table-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">سجل كلفة الطحين</h2>
+            
+            <div id="flourTableContainer">
+                <table id="flourTable">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>سعر الكيس</th>
+                            <th>عدد الأكياس</th>
+                            <th>الكلفة الإجمالية</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flourTableBody">
+                        <!-- سيتم ملؤه تلقائياً -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- إحصائيات الطحين -->
+        <div class="form-container">
+            <h2 style="color: var(--gold); margin-bottom: 20px;">إحصائيات الطحين</h2>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-title">إجمالي الأكياس (شهر)</div>
+                    <div class="card-value" id="totalBagsMonth">0</div>
+                    <div class="card-label">كيس</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">إجمالي الكلفة (شهر)</div>
+                    <div class="card-value" id="totalCostMonth">0</div>
+                    <div class="card-label">دينار</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">متوسط سعر الكيس</div>
+                    <div class="card-value" id="avgBagPrice">0</div>
+                    <div class="card-label">دينار</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="db.js"></script>
+    <script src="auth-check.js"></script>
+    <script>
+        let editingId = null;
+
+        // تعيين التاريخ الحالي تلقائياً
+        document.getElementById('date').valueAsDate = new Date();
+
+        // حساب الكلفة تلقائياً عند التغيير
+        document.getElementById('bagPrice').addEventListener('input', calculateCost);
+        document.getElementById('bagCount').addEventListener('input', calculateCost);
+
+        function calculateCost() {
+            const bagPrice = parseFloat(document.getElementById('bagPrice').value) || 0;
+            const bagCount = parseInt(document.getElementById('bagCount').value) || 0;
+            const totalCost = bagPrice * bagCount;
+
+            document.getElementById('displayBagPrice').textContent = formatNumber(bagPrice);
+            document.getElementById('displayBagCount').textContent = bagCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            document.getElementById('totalCost').textContent = formatNumber(totalCost);
+        }
+
+        // حفظ البيانات
+        document.getElementById('flourForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                date: document.getElementById('date').value,
+                bag_price: document.getElementById('bagPrice').value,
+                bag_count: document.getElementById('bagCount').value
+            };
+
+            try {
+                // التحقق من وجود سجل بنفس التاريخ
+                const existingRecords = await db.getFlourByDate(formData.date);
+                
+                if (existingRecords.length > 0 && !editingId) {
+                    showAlert('يوجد سجل بهذا التاريخ بالفعل! يرجى تعديله من الجدول.', 'danger');
+                    return;
+                }
+
+                if (editingId) {
+                    // تحديث السجل
+                    await db.updateFlour(editingId, formData);
+                    showAlert('تم تحديث البيانات بنجاح!', 'success');
+                    editingId = null;
+                } else {
+                    // إضافة سجل جديد
+                    await db.addFlour(formData);
+                    showAlert('تم حفظ البيانات بنجاح!', 'success');
+                }
+
+                resetForm();
+                await loadFlourTable();
+                await loadFlourStats();
+            } catch (error) {
+                console.error('Error saving flour:', error);
+                showAlert('حدث خطأ أثناء الحفظ: ' + error.message, 'danger');
+            }
+        });
+
+        // مسح الحقول
+        function resetForm() {
+            document.getElementById('flourForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+            editingId = null;
+            calculateCost();
+        }
+
+        // عرض رسالة تنبيه
+        function showAlert(message, type) {
+            const alertDiv = document.getElementById('alertMessage');
+            alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        // تحميل جدول الطحين
+        async function loadFlourTable() {
+            const flour = (await db.getAllFlour()).sort((a, b) => new Date(b.date) - new Date(a.date));
+            const tbody = document.getElementById('flourTableBody');
+
+            if (flour.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <p>لا توجد سجلات طحين بعد</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = flour.map(record => `
+                <tr>
+                    <td>${record.date}</td>
+                    <td>${formatNumber(record.bag_price)}</td>
+                    <td>${record.bag_count.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</td>
+                    <td><strong>${formatNumber(record.total_cost)}</strong></td>
+                    <td>
+                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editFlour(${record.id})">تعديل</button>
+                        <button class="btn btn-danger" onclick="deleteFlour(${record.id})">حذف</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // تحميل إحصائيات الطحين
+        async function loadFlourStats() {
+            const flour = await db.getAllFlour();
+            
+            // حساب إحصائيات الشهر الحالي
+            const monthAgo = new Date();
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            const monthAgoStr = monthAgo.toISOString().split('T')[0];
+            
+            const monthFlour = flour.filter(f => f.date >= monthAgoStr);
+            
+            const totalBags = monthFlour.reduce((sum, f) => sum + f.bag_count, 0);
+            const totalCost = monthFlour.reduce((sum, f) => sum + f.total_cost, 0);
+            const avgPrice = totalBags > 0 ? totalCost / totalBags : 0;
+
+            document.getElementById('totalBagsMonth').textContent = totalBags.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            document.getElementById('totalCostMonth').textContent = formatNumber(totalCost);
+            document.getElementById('avgBagPrice').textContent = formatNumber(avgPrice);
+        }
+
+        // تعديل سجل طحين
+        async function editFlour(id) {
+            const flour = await db.getAllFlour();
+            const record = flour.find(f => f.id === id);
+            
+            if (record) {
+                document.getElementById('date').value = record.date;
+                document.getElementById('bagPrice').value = record.bag_price;
+                document.getElementById('bagCount').value = record.bag_count;
+                calculateCost();
+                editingId = id;
+                
+                // التمرير للأعلى
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // حذف سجل طحين
+        async function deleteFlour(id) {
+            if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
+                try {
+                    await db.deleteFlour(id);
+                    showAlert('تم حذف السجل بنجاح!', 'success');
+                    await loadFlourTable();
+                    await loadFlourStats();
+                } catch (error) {
+                    console.error('Error deleting flour:', error);
+                    showAlert('حدث خطأ أثناء الحذف', 'danger');
+                }
+            }
+        }
+
+        // تحميل البيانات عند فتح الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadFlourTable();
+            await loadFlourStats();
+            calculateCost();
+        });
+    </script>
+</body>
+</html>
+

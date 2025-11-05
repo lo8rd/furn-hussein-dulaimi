@@ -1,0 +1,27 @@
+# Custom 404 Error Page for Furn Hussein Al-Dulaimi
+ErrorDocument 404 /404.html
+
+# Redirect non-existent pages to 404
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # If the file or directory doesn't exist
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # And it's not already the 404 page
+    RewriteCond %{REQUEST_URI} !^/404\.html$
+    
+    # Redirect to 404 page
+    RewriteRule .* /404.html [L,R=404]
+</IfModule>
+
+# Security: Prevent directory browsing
+Options -Indexes
+
+# Security: Protect sensitive files
+<FilesMatch "\.(sql|env|config)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
