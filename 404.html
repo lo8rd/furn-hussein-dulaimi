@@ -175,11 +175,19 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script>
         // إذا كان المستخدم مسجل دخول، نوجهه للصفحة الرئيسية
-        document.addEventListener('DOMContentLoaded', async () => {
-            // تحقق من وجود Supabase
-            if (typeof Supabase !== 'undefined' && typeof supabase !== 'undefined') {
+        (async function() {
+            // Wait for Supabase to load
+            let attempts = 0;
+            while (typeof supabase === 'undefined' && attempts < 30) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (typeof supabase !== 'undefined') {
                 try {
                     const { data: { session } } = await supabase.auth.getSession();
                     if (session) {
@@ -190,11 +198,8 @@
                     console.log('Session check error:', error);
                 }
             }
-        });
+        })();
     </script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js"></script>
 </body>
 </html>
 

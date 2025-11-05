@@ -279,11 +279,6 @@
             }
         });
 
-        // Check if already logged in
-        if (sessionStorage.getItem('isLoggedIn') === 'true') {
-            window.location.href = 'START_HERE.html';
-        }
-
         // Login form handler
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -294,8 +289,10 @@
             const loadingDiv = document.getElementById('loading');
             const submitBtn = document.getElementById('loginBtn');
 
-            // Clear previous alerts
+            // Clear previous alerts and any stored sessions
             alertContainer.innerHTML = '';
+            sessionStorage.clear();
+            localStorage.clear();
 
             // Show loading animation
             loadingDiv.style.display = 'flex';
@@ -303,24 +300,24 @@
             submitBtn.style.opacity = '0.7';
 
             try {
-                // Query Supabase for user credentials
-                const { data, error } = await db.supabase
+                // Step 1: Verify credentials from users table
+                const { data: userData, error: userError } = await db.supabase
                     .from('users')
                     .select('*')
                     .eq('username', username)
                     .eq('password', password)
                     .single();
 
-                loadingDiv.style.display = 'none';
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-
-                if (error || !data) {
+                if (userError || !userData) {
                     // Invalid credentials
+                    loadingDiv.style.display = 'none';
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                    
                     alertContainer.innerHTML = `
                         <div class="alert alert-danger">
                             <strong>⚠️ فشل تسجيل الدخول</strong><br>
-                            تحقق من المعلومات وحاول مرة أخرى
+                            اسم المستخدم أو كلمة المرور غير صحيحة
                         </div>
                     `;
                     document.getElementById('password').value = '';
@@ -328,80 +325,89 @@
                     return;
                 }
 
-                // Login successful - Create Supabase Auth session
-                try {
-                    // Try to sign in with Supabase Auth first
-                    let authSuccess = false;
-                    const userEmail = `${username}@frn.local`;
-                    
-                    // Try signing in
-                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                // Step 2: Create Supabase Auth session (REQUIRED)
+                const userEmail = `${username}@frn.local`;
+                let authSession = null;
+                
+                // Try signing in first
+                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                    email: userEmail,
+                    password: password
+                });
+
+                if (signInError) {
+                    console.log('User not in Auth system, creating account...');
+                    // User doesn't exist in Auth, create account
+                    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                         email: userEmail,
-                        password: password
+                        password: password,
+                        options: {
+                            data: {
+                                username: username,
+                                user_id: userData.id
+                            }
+                        }
                     });
 
-                    if (signInError) {
-                        console.log('User not in Auth, creating account...', signInError.message);
-                        // User doesn't exist in Auth, create account
-                        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                            email: userEmail,
-                            password: password,
-                            options: {
-                                data: {
-                                    username: username,
-                                    user_id: data.id
-                                },
-                                emailRedirectTo: window.location.origin
-                            }
-                        });
-
-                        if (signUpError) {
-                            console.warn('Supabase signup error:', signUpError);
-                            // Continue with sessionStorage fallback
-                        } else {
-                            console.log('Supabase account created successfully');
-                            authSuccess = true;
-                        }
-                    } else {
-                        console.log('Supabase sign in successful');
-                        authSuccess = true;
+                    if (signUpError) {
+                        console.error('Failed to create Supabase Auth session:', signUpError);
+                        loadingDiv.style.display = 'none';
+                        submitBtn.disabled = false;
+                        submitBtn.style.opacity = '1';
+                        
+                        alertContainer.innerHTML = `
+                            <div class="alert alert-danger">
+                                <strong>⚠️ خطأ في النظام</strong><br>
+                                فشل إنشاء جلسة آمنة. يرجى المحاولة مرة أخرى
+                            </div>
+                        `;
+                        return;
                     }
-
-                    // Store user info in sessionStorage (fallback and convenience)
-                    sessionStorage.setItem('isLoggedIn', 'true');
-                    sessionStorage.setItem('userId', data.id);
-                    sessionStorage.setItem('username', data.username);
-
-                    // Show success message
-                    alertContainer.innerHTML = `
-                        <div class="alert" style="background: rgba(40, 167, 69, 0.2); border: 1px solid #28a745; color: #28a745;">
-                            <strong>✅ تم تسجيل الدخول بنجاح</strong><br>
-                            ${authSuccess ? 'تم إنشاء جلسة آمنة' : 'جاري التحويل'}...
-                        </div>
-                    `;
-
-                    // Redirect to main page
-                    setTimeout(() => {
-                        window.location.href = 'START_HERE.html';
-                    }, 1000);
-                } catch (authErr) {
-                    console.error('Supabase Auth error:', authErr);
-                    // Continue with sessionStorage fallback
-                    sessionStorage.setItem('isLoggedIn', 'true');
-                    sessionStorage.setItem('userId', data.id);
-                    sessionStorage.setItem('username', data.username);
                     
-                    alertContainer.innerHTML = `
-                        <div class="alert" style="background: rgba(40, 167, 69, 0.2); border: 1px solid #28a745; color: #28a745;">
-                            <strong>✅ تم تسجيل الدخول بنجاح</strong><br>
-                            جاري التحويل...
-                        </div>
-                    `;
-                    
-                    setTimeout(() => {
-                        window.location.href = 'START_HERE.html';
-                    }, 1000);
+                    authSession = signUpData.session;
+                    console.log('✅ Supabase Auth account created successfully');
+                } else {
+                    authSession = signInData.session;
+                    console.log('✅ Supabase Auth sign in successful');
                 }
+
+                // Verify that we have a valid session
+                if (!authSession) {
+                    loadingDiv.style.display = 'none';
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                    
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>⚠️ خطأ في النظام</strong><br>
+                            فشل إنشاء جلسة آمنة. يرجى المحاولة مرة أخرى
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Step 3: Store convenience data (not used for auth)
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('userId', userData.id);
+                sessionStorage.setItem('username', userData.username);
+
+                // Hide loading
+                loadingDiv.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+
+                // Show success message
+                alertContainer.innerHTML = `
+                    <div class="alert" style="background: rgba(40, 167, 69, 0.2); border: 1px solid #28a745; color: #28a745;">
+                        <strong>✅ تم تسجيل الدخول بنجاح</strong><br>
+                        تم إنشاء جلسة آمنة، جاري التحويل...
+                    </div>
+                `;
+
+                // Redirect to main page
+                setTimeout(() => {
+                    window.location.href = 'START_HERE.html';
+                }, 1500);
 
             } catch (err) {
                 console.error('Login error:', err);
@@ -411,8 +417,8 @@
                 
                 alertContainer.innerHTML = `
                     <div class="alert alert-danger">
-                        <strong>⚠️ فشل تسجيل الدخول</strong><br>
-                        تحقق من المعلومات وحاول مرة أخرى
+                        <strong>⚠️ خطأ في الاتصال</strong><br>
+                        حدث خطأ في الاتصال بالنظام. يرجى المحاولة مرة أخرى
                     </div>
                 `;
             }
