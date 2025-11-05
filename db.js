@@ -299,8 +299,9 @@ class Database {
             .from('expenses')
             .insert([{
                 date: data.date,
-                expense_name: data.expense_name,
-                amount: parseFloat(data.amount) || 0
+                type: data.type || data.expense_name || 'other', // type: 'labor', 'flour', 'other'
+                amount: parseFloat(data.amount) || 0,
+                note: data.note || data.expense_name || null
             }])
             .select()
             .single();
@@ -343,8 +344,9 @@ class Database {
             .from('expenses')
             .update({
                 date: data.date,
-                expense_name: data.expense_name,
-                amount: parseFloat(data.amount) || 0
+                type: data.type || data.expense_name || 'other',
+                amount: parseFloat(data.amount) || 0,
+                note: data.note || data.expense_name || null
             })
             .eq('id', id)
             .select()
@@ -370,94 +372,33 @@ class Database {
     }
 
     // ========================================
-    // جدول الصمون الكهربائي (Electric Bread)
+    // ⚠️ جدول الصمون الكهربائي تم إزالته (Electric Bread Removed)
     // ========================================
+    // استخدم daily_bakes أو differences بدلاً من ذلك
     
     async addElectricBread(data) {
-        const jerqTotal = (parseInt(data.jerq_count) || 0) * 250;
-        const circleTotal = this.calculateCirclePrice(parseInt(data.circle_count) || 0);
-
-        const { data: result, error } = await this.supabase
-            .from('electric_bread')
-            .insert([{
-                date: data.date,
-                jerq_count: parseInt(data.jerq_count) || 0,
-                jerq_total: jerqTotal,
-                circle_count: parseInt(data.circle_count) || 0,
-                circle_total: circleTotal,
-                total_profit: jerqTotal + circleTotal
-            }])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error adding electric bread:', error);
-            throw error;
-        }
-        return result;
+        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
+        throw new Error('Electric bread table no longer exists. Please use daily_bakes or differences.');
     }
 
     async getAllElectricBread() {
-        const { data, error } = await this.supabase
-            .from('electric_bread')
-            .select('*')
-            .order('date', { ascending: false });
-
-        if (error) {
-            console.error('Error getting electric bread:', error);
-            return [];
-        }
-        return data || [];
+        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
+        return [];
     }
 
     async getElectricBreadByDate(date) {
-        const { data, error } = await this.supabase
-            .from('electric_bread')
-            .select('*')
-            .eq('date', date);
-
-        if (error) {
-            console.error('Error getting electric bread by date:', error);
-            return [];
-        }
-        return data || [];
+        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
+        return [];
     }
 
     async updateElectricBread(id, data) {
-        const jerqTotal = (parseInt(data.jerq_count) || 0) * 250;
-        const circleTotal = this.calculateCirclePrice(parseInt(data.circle_count) || 0);
-
-        const { data: result, error } = await this.supabase
-            .from('electric_bread')
-            .update({
-                date: data.date,
-                jerq_count: parseInt(data.jerq_count) || 0,
-                jerq_total: jerqTotal,
-                circle_count: parseInt(data.circle_count) || 0,
-                circle_total: circleTotal,
-                total_profit: jerqTotal + circleTotal
-            })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error updating electric bread:', error);
-            throw error;
-        }
-        return result;
+        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
+        throw new Error('Electric bread table no longer exists. Please use daily_bakes or differences.');
     }
 
     async deleteElectricBread(id) {
-        const { error } = await this.supabase
-            .from('electric_bread')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error('Error deleting electric bread:', error);
-            throw error;
-        }
+        console.warn('⚠️ Electric bread table removed. Use daily_bakes or differences instead.');
+        throw new Error('Electric bread table no longer exists. Please use daily_bakes or differences.');
     }
 
     // حساب سعر الدائري
@@ -491,17 +432,17 @@ class Database {
     // ========================================
     
     async addDifference(data) {
-        const count = parseInt(data.count) || 0;
-        // حساب المبلغ: (عدد الصمون ÷ 8) - يُخزن بالألف ليُعرض بـ formatThousands()
-        const amount = count / 8;
+        const quantity = parseInt(data.count) || parseInt(data.quantity) || 0;
+        // حساب القيمة الإجمالية: (عدد الصمون ÷ 8) * 1000 - تُخزن بالدينار الفعلي
+        const total_value = (quantity / 8) * 1000;
 
         const { data: result, error } = await this.supabase
             .from('differences')
             .insert([{
                 date: data.date,
                 type: data.type,
-                count: count,
-                amount: amount
+                quantity: quantity,
+                total_value: total_value
             }])
             .select()
             .single();
@@ -540,17 +481,17 @@ class Database {
     }
 
     async updateDifference(id, data) {
-        const count = parseInt(data.count) || 0;
-        // حساب المبلغ: (عدد الصمون ÷ 8) - يُخزن بالألف ليُعرض بـ formatThousands()
-        const amount = count / 8;
+        const quantity = parseInt(data.count) || parseInt(data.quantity) || 0;
+        // حساب القيمة الإجمالية: (عدد الصمون ÷ 8) * 1000
+        const total_value = (quantity / 8) * 1000;
 
         const { data: result, error } = await this.supabase
             .from('differences')
             .update({
                 date: data.date,
                 type: data.type,
-                count: count,
-                amount: amount
+                quantity: quantity,
+                total_value: total_value
             })
             .eq('id', id)
             .select()
