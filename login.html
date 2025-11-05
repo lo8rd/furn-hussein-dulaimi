@@ -300,7 +300,8 @@
             submitBtn.style.opacity = '0.7';
 
             try {
-                // Step 1: Verify credentials from users table
+                // Step 1: Verify credentials from users table and get real email
+                console.log('🔍 Looking up user:', username);
                 const { data: userData, error: userError } = await db.supabase
                     .from('users')
                     .select('*')
@@ -310,6 +311,7 @@
 
                 if (userError || !userData) {
                     // Invalid credentials
+                    console.error('❌ User lookup failed:', userError);
                     loadingDiv.style.display = 'none';
                     submitBtn.disabled = false;
                     submitBtn.style.opacity = '1';
@@ -325,11 +327,30 @@
                     return;
                 }
 
-                // Step 2: Create Supabase Auth session (REQUIRED)
-                const userEmail = `${username}@furn-system.local`;
+                // Check if user has a valid email address
+                if (!userData.email || userData.email.trim() === '') {
+                    console.error('❌ User has no email address in database');
+                    loadingDiv.style.display = 'none';
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                    
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>⚠️ خطأ في إعداد الحساب</strong><br>
+                            لا يوجد بريد إلكتروني مسجل لهذا المستخدم<br>
+                            <small style="font-size: 0.85rem;">يرجى التواصل مع المسؤول لإضافة بريد إلكتروني</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Step 2: Use the real email from database for Supabase Auth
+                const userEmail = userData.email;
                 let authSession = null;
                 
-                console.log('🔐 Attempting to sign in with email:', userEmail);
+                console.log('✅ User found:', username);
+                console.log('📧 Email address:', userEmail);
+                console.log('🔐 Attempting Supabase Auth sign in...');
                 
                 // Try signing in first
                 const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -339,9 +360,9 @@
 
                 if (signInError) {
                     console.log('⚠️ Sign in failed:', signInError.message);
-                    console.log('🔄 Creating new Auth account...');
+                    console.log('🔄 Creating new Supabase Auth account with email:', userEmail);
                     
-                    // User doesn't exist in Auth, create account
+                    // User doesn't exist in Auth, create account with real email
                     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                         email: userEmail,
                         password: password,
@@ -356,30 +377,40 @@
                     });
 
                     if (signUpError) {
-                        console.error('❌ Failed to create Supabase Auth session:', signUpError);
+                        console.error('❌ Failed to create Supabase Auth account:', signUpError);
                         console.error('Error details:', {
                             message: signUpError.message,
                             status: signUpError.status,
-                            code: signUpError.code
+                            code: signUpError.code,
+                            email: userEmail
                         });
                         
                         loadingDiv.style.display = 'none';
                         submitBtn.disabled = false;
                         submitBtn.style.opacity = '1';
                         
-                        // Show specific error message
-                        let errorMessage = 'فشل إنشاء جلسة آمنة';
-                        if (signUpError.message.includes('email')) {
-                            errorMessage = 'خطأ في تكوين البريد الإلكتروني. يرجى التواصل مع المسؤول';
-                        } else if (signUpError.message.includes('confirmation')) {
-                            errorMessage = 'يتطلب تأكيد البريد الإلكتروني. يرجى تعطيل Email Confirmation في Supabase';
+                        // Show specific error message based on error type
+                        let errorMessage = 'فشل إنشاء جلسة Supabase Auth';
+                        let errorDetail = signUpError.message;
+                        
+                        if (signUpError.message.includes('invalid') && signUpError.message.includes('email')) {
+                            errorMessage = 'البريد الإلكتروني غير صالح في قاعدة البيانات';
+                            errorDetail = `البريد المسجل: ${userEmail} - يرجى التحقق من صحته في جدول users`;
+                        } else if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
+                            errorMessage = 'الحساب موجود بالفعل في Supabase Auth';
+                            errorDetail = 'جرب تسجيل الدخول مرة أخرى';
+                        } else if (signUpError.message.includes('confirmation') || signUpError.message.includes('confirm')) {
+                            errorMessage = 'تأكيد البريد مطلوب';
+                            errorDetail = 'يجب تعطيل "Confirm email" في: Supabase Dashboard → Authentication → Providers → Email';
                         }
                         
                         alertContainer.innerHTML = `
                             <div class="alert alert-danger">
-                                <strong>⚠️ خطأ في النظام</strong><br>
-                                ${errorMessage}<br>
-                                <small style="font-size: 0.8rem; opacity: 0.8;">Error: ${signUpError.message}</small>
+                                <strong>⚠️ ${errorMessage}</strong><br>
+                                ${errorDetail}<br>
+                                <small style="font-size: 0.75rem; opacity: 0.7; display: block; margin-top: 8px;">
+                                    Technical: ${signUpError.message}
+                                </small>
                             </div>
                         `;
                         return;

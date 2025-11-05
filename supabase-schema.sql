@@ -4,16 +4,45 @@
 -- ================================================
 -- 1️⃣ جدول المستخدمين (Users)
 -- ================================================
+
+-- ⚠️ هام: إذا كان الجدول موجوداً بالفعل، استخدم الخطوات أدناه بدلاً من CREATE TABLE
+
+-- للتثبيت الجديد: إنشاء جدول جديد مع عمود email
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- إدخال بيانات المستخدم الأساسية
-INSERT INTO users (username, password) 
-VALUES ('hus_dul9', 'G7r$k9ZnQ!t4Wp2')
+-- ════════════════════════════════════════════════════════════
+-- 🔄 إذا كان الجدول موجوداً: قم بتشغيل هذه الأوامر بدلاً من ذلك
+-- ════════════════════════════════════════════════════════════
+
+-- الخطوة 1: إضافة عمود email إذا لم يكن موجوداً
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+
+-- الخطوة 2: تحديث المستخدم الموجود بالبريد الإلكتروني الحقيقي
+-- ⚠️ هام: غيّر 'hus_dul9@gmail.com' إلى بريدك الإلكتروني الحقيقي
+UPDATE users 
+SET email = 'hus_dul9@gmail.com' 
+WHERE username = 'hus_dul9' AND (email IS NULL OR email = '');
+
+-- الخطوة 3: التحقق من التحديث
+SELECT username, email, created_at FROM users;
+
+-- الخطوة 4: (اختياري) جعل عمود email إلزامياً وفريداً بعد أن يكون لدى جميع المستخدمين بريد
+-- قم بتشغيل هذا فقط بعد التأكد من أن جميع المستخدمين لديهم عناوين بريد صالحة
+-- ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+-- CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx ON users(email) WHERE email IS NOT NULL;
+
+-- ════════════════════════════════════════════════════════════
+-- 📝 للتثبيت الجديد فقط: إدخال بيانات المستخدم الأساسية
+-- ════════════════════════════════════════════════════════════
+-- قم بتشغيل هذا فقط إذا كان الجدول فارغاً
+INSERT INTO users (username, email, password) 
+VALUES ('hus_dul9', 'hus_dul9@gmail.com', 'G7r$k9ZnQ!t4Wp2')
 ON CONFLICT (username) DO NOTHING;
 
 -- ================================================
