@@ -199,18 +199,48 @@
         });
 
         // حفظ البيانات
+        // دالة تحويل نوع الفروقات من العربية إلى الإنجليزية (للحفظ)
+        function convertTypeToEnglish(arabicType) {
+            const typeMap = {
+                'تلف': 'waste',
+                'هدر': 'waste',
+                'مطعم': 'restaurant',
+                'كافتيريا': 'restaurant',
+                'محل': 'restaurant',
+                'زبون': 'restaurant',
+                'عميل': 'restaurant'
+            };
+            
+            // إذا كانت القيمة موجودة في القاموس، نستخدمها، وإلا نستخدم 'other'
+            return typeMap[arabicType.trim()] || 'other';
+        }
+
+        // دالة تحويل نوع الفروقات من الإنجليزية إلى العربية (للعرض)
+        function convertTypeToArabic(englishType) {
+            const typeMap = {
+                'waste': 'هدر/تلف',
+                'restaurant': 'مطاعم/محلات',
+                'other': 'أخرى'
+            };
+            
+            return typeMap[englishType] || englishType;
+        }
+
         document.getElementById('differencesForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const type = document.getElementById('type').value.trim();
-            if (!type) {
+            const typeInput = document.getElementById('type').value.trim();
+            if (!typeInput) {
                 showAlert('الرجاء إدخال نوع الفروقات!', 'danger');
                 return;
             }
 
+            // تحويل النوع إلى الإنجليزية
+            const typeEnglish = convertTypeToEnglish(typeInput);
+
             const formData = {
                 date: document.getElementById('date').value,
-                type: type,
+                type: typeEnglish, // استخدام القيمة الإنجليزية
                 count: document.getElementById('count').value
             };
 
@@ -290,8 +320,8 @@
                         details: []
                     };
                 }
-                grouped[key].totalCount += record.count;
-                grouped[key].totalAmount += record.amount;
+                grouped[key].totalCount += (record.quantity || record.count || 0);
+                grouped[key].totalAmount += (record.total_value || record.amount || 0) / 1000; // تحويل من دينار إلى ألف دينار
                 grouped[key].count++;
                 grouped[key].details.push(record);
             });
@@ -311,7 +341,7 @@
                 return `
                     <tr>
                         <td>${group.date}</td>
-                        <td><strong style="color: var(--gold);">${group.type}</strong></td>
+                        <td><strong style="color: var(--gold);">${convertTypeToArabic(group.type)}</strong></td>
                         <td><strong>${formatNumber(group.totalCount, 0)}</strong></td>
                         <td><strong style="color: var(--danger);">${formatThousands(group.totalAmount)}</strong></td>
                         <td>${group.count} ${group.count > 1 ? 'مرات' : 'مرة'}</td>
@@ -338,11 +368,11 @@
             const today = new Date().toISOString().split('T')[0];
             const todayRecords = await db.getDifferencesByDate(today);
 
-            const totalCount = todayRecords.reduce((sum, r) => sum + r.count, 0);
-            const totalAmount = todayRecords.reduce((sum, r) => sum + r.amount, 0);
+            const totalCount = todayRecords.reduce((sum, r) => sum + (r.quantity || r.count || 0), 0);
+            const totalAmount = todayRecords.reduce((sum, r) => sum + (r.total_value || r.amount || 0), 0);
 
             document.getElementById('todayTotalCount').textContent = formatNumber(totalCount, 0);
-            document.getElementById('todayTotalAmount').textContent = formatThousands(totalAmount);
+            document.getElementById('todayTotalAmount').textContent = formatNumber(totalAmount, 0);
         }
 
         // تحميل إحصائيات الفروقات
@@ -452,7 +482,7 @@
 
             content.innerHTML = `
                 <div style="margin-bottom: 20px; padding: 15px; background: var(--primary-black); border-radius: 10px;">
-                    <h3 style="color: var(--gold); margin-bottom: 10px;">${group.type}</h3>
+                    <h3 style="color: var(--gold); margin-bottom: 10px;">${convertTypeToArabic(group.type)}</h3>
                     <p style="color: var(--light-gray);">التاريخ: ${group.date}</p>
                     <p style="color: var(--light-gray);">عدد المرات: ${group.count}</p>
                     <p style="color: var(--light-gray);">إجمالي الصمون: ${formatNumber(group.totalCount, 0)} صمون</p>
@@ -465,8 +495,8 @@
                     <div style="background: var(--primary-black); padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <div style="color: var(--white); font-weight: bold;">المرة ${index + 1}</div>
-                            <div style="color: var(--light-gray); margin-top: 5px;">${formatNumber(detail.count, 0)} صمون</div>
-                            <div style="color: var(--danger); font-size: 1.2rem; margin-top: 5px;">${formatThousands(detail.amount)} دينار</div>
+                            <div style="color: var(--light-gray); margin-top: 5px;">${formatNumber(detail.quantity || detail.count || 0, 0)} صمون</div>
+                            <div style="color: var(--danger); font-size: 1.2rem; margin-top: 5px;">${formatNumber((detail.total_value || detail.amount || 0), 0)} دينار</div>
                         </div>
                         <div>
                             <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.9rem; margin-left: 5px;" onclick="editDifferenceFromModal(${detail.id})">تعديل</button>
@@ -543,8 +573,8 @@
             if (record) {
                 document.getElementById('date').value = record.date;
                 document.getElementById('type').value = record.type;
-                document.getElementById('count').value = record.count;
-                document.getElementById('displayAmount').textContent = formatThousands(record.amount);
+                document.getElementById('count').value = (record.quantity || record.count || 0);
+                document.getElementById('displayAmount').textContent = formatThousands((record.total_value || record.amount || 0) / 1000);
                 editingId = id;
                 
                 // التمرير للأعلى
