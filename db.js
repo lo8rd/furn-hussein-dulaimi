@@ -504,8 +504,8 @@ class Database {
     
     async addDifference(data) {
         const quantity = parseInt(data.count) || parseInt(data.quantity) || 0;
-        // حساب القيمة الإجمالية: (عدد الصمون ÷ 8) * 1000 - تُخزن بالدينار الفعلي
-        const total_value = (quantity / 8) * 1000;
+        // حساب القيمة الإجمالية: (عدد الصمون ÷ 8) - تُخزن بالآلاف كباقي النظام
+        const total_value = quantity / 8;
 
         const { data: result, error } = await this.supabase
             .from('differences')
@@ -553,8 +553,8 @@ class Database {
 
     async updateDifference(id, data) {
         const quantity = parseInt(data.count) || parseInt(data.quantity) || 0;
-        // حساب القيمة الإجمالية: (عدد الصمون ÷ 8) * 1000
-        const total_value = (quantity / 8) * 1000;
+        // حساب القيمة الإجمالية: (عدد الصمون ÷ 8) - تُخزن بالآلاف كباقي النظام
+        const total_value = quantity / 8;
 
         const { data: result, error } = await this.supabase
             .from('differences')

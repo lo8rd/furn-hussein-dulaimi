@@ -321,7 +321,7 @@
                     };
                 }
                 grouped[key].totalCount += (record.quantity || record.count || 0);
-                grouped[key].totalAmount += (record.total_value || record.amount || 0) / 1000; // تحويل من دينار إلى ألف دينار
+                grouped[key].totalAmount += (record.total_value || record.amount || 0); // مُخزنة بالآلاف
                 grouped[key].count++;
                 grouped[key].details.push(record);
             });
@@ -372,7 +372,7 @@
             const totalAmount = todayRecords.reduce((sum, r) => sum + (r.total_value || r.amount || 0), 0);
 
             document.getElementById('todayTotalCount').textContent = formatNumber(totalCount, 0);
-            document.getElementById('todayTotalAmount').textContent = formatNumber(totalAmount, 0);
+            document.getElementById('todayTotalAmount').textContent = formatThousands(totalAmount);
         }
 
         // تحميل إحصائيات الفروقات
@@ -496,7 +496,7 @@
                         <div>
                             <div style="color: var(--white); font-weight: bold;">المرة ${index + 1}</div>
                             <div style="color: var(--light-gray); margin-top: 5px;">${formatNumber(detail.quantity || detail.count || 0, 0)} صمون</div>
-                            <div style="color: var(--danger); font-size: 1.2rem; margin-top: 5px;">${formatNumber((detail.total_value || detail.amount || 0), 0)} دينار</div>
+                            <div style="color: var(--danger); font-size: 1.2rem; margin-top: 5px;">${formatThousands((detail.total_value || detail.amount || 0))} دينار</div>
                         </div>
                         <div>
                             <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.9rem; margin-left: 5px;" onclick="editDifferenceFromModal(${detail.id})">تعديل</button>
@@ -574,7 +574,7 @@
                 document.getElementById('date').value = record.date;
                 document.getElementById('type').value = record.type;
                 document.getElementById('count').value = (record.quantity || record.count || 0);
-                document.getElementById('displayAmount').textContent = formatThousands((record.total_value || record.amount || 0) / 1000);
+                document.getElementById('displayAmount').textContent = formatThousands((record.total_value || record.amount || 0));
                 editingId = id;
                 
                 // التمرير للأعلى
