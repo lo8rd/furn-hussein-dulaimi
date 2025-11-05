@@ -9,46 +9,22 @@
 -- STEP 1: DROP ALL EXISTING TABLES
 -- ═══════════════════════════════════════════════════════════════════
 -- This removes all tables created by previous versions
+-- Note: Each table is dropped individually to avoid errors
 
-DROP TABLE IF EXISTS 
-    users,
-    dough,
-    flour,
-    expenses,
-    electric_bread,
-    differences,
-    daily_bakes,
-    bakery,
-    auth,
-    login_history,
-    settings,
-    profits,
-    logs,
-    doughs
-CASCADE;
-
--- Drop any remaining policies
-DROP POLICY IF EXISTS "Allow public read access to users" ON users;
-DROP POLICY IF EXISTS "Allow public read access to dough" ON dough;
-DROP POLICY IF EXISTS "Allow public insert access to dough" ON dough;
-DROP POLICY IF EXISTS "Allow public update access to dough" ON dough;
-DROP POLICY IF EXISTS "Allow public delete access to dough" ON dough;
-DROP POLICY IF EXISTS "Allow public read access to flour" ON flour;
-DROP POLICY IF EXISTS "Allow public insert access to flour" ON flour;
-DROP POLICY IF EXISTS "Allow public update access to flour" ON flour;
-DROP POLICY IF EXISTS "Allow public delete access to flour" ON flour;
-DROP POLICY IF EXISTS "Allow public read access to expenses" ON expenses;
-DROP POLICY IF EXISTS "Allow public insert access to expenses" ON expenses;
-DROP POLICY IF EXISTS "Allow public update access to expenses" ON expenses;
-DROP POLICY IF EXISTS "Allow public delete access to expenses" ON expenses;
-DROP POLICY IF EXISTS "Allow public read access to electric_bread" ON electric_bread;
-DROP POLICY IF EXISTS "Allow public insert access to electric_bread" ON electric_bread;
-DROP POLICY IF EXISTS "Allow public update access to electric_bread" ON electric_bread;
-DROP POLICY IF EXISTS "Allow public delete access to electric_bread" ON electric_bread;
-DROP POLICY IF EXISTS "Allow public read access to differences" ON differences;
-DROP POLICY IF EXISTS "Allow public insert access to differences" ON differences;
-DROP POLICY IF EXISTS "Allow public update access to differences" ON differences;
-DROP POLICY IF EXISTS "Allow public delete access to differences" ON differences;
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    -- Drop all policies first
+    FOR r IN (SELECT tablename, policyname FROM pg_policies WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP POLICY IF EXISTS "' || r.policyname || '" ON ' || r.tablename;
+    END LOOP;
+    
+    -- Drop all tables
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END $$;
 
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 2: ENABLE UUID EXTENSION
