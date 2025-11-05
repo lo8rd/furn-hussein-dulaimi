@@ -11,25 +11,45 @@ class Database {
     }
 
     // ========================================
-    // جدول العجنات (Dough Operations)
+    // جدول العجنات (Daily Bakes Operations)
     // ========================================
     
     async addDough(data) {
-        const morning_profit = (parseInt(data.morning_count) || 0) * 10 / 8;
-        const evening_profit = (parseInt(data.evening_count) || 0) * 10 / 8;
+        // Convert old structure (morning/evening counts) to new structure (shift-based)
+        const records = [];
+        
+        // Add morning shift if count > 0
+        if (data.morning_count && parseInt(data.morning_count) > 0) {
+            const morning_count = parseInt(data.morning_count) || 0;
+            const morning_profit = morning_count * 10 / 8;
+            records.push({
+                date: data.date,
+                shift: 'morning',
+                dough_count: morning_count,
+                total_profit: morning_profit
+            });
+        }
+        
+        // Add evening shift if count > 0
+        if (data.evening_count && parseInt(data.evening_count) > 0) {
+            const evening_count = parseInt(data.evening_count) || 0;
+            const evening_profit = evening_count * 10 / 8;
+            records.push({
+                date: data.date,
+                shift: 'evening',
+                dough_count: evening_count,
+                total_profit: evening_profit
+            });
+        }
+        
+        if (records.length === 0) {
+            throw new Error('At least one shift must have a count greater than 0');
+        }
         
         const { data: result, error } = await this.supabase
-            .from('dough')
-            .insert([{
-                date: data.date,
-                morning_count: parseInt(data.morning_count) || 0,
-                evening_count: parseInt(data.evening_count) || 0,
-                morning_profit: morning_profit,
-                evening_profit: evening_profit,
-                total_profit: morning_profit + evening_profit
-            }])
-            .select()
-            .single();
+            .from('daily_bakes')
+            .insert(records)
+            .select();
 
         if (error) {
             console.error('Error adding dough:', error);
@@ -40,21 +60,24 @@ class Database {
 
     async getAllDough() {
         const { data, error } = await this.supabase
-            .from('dough')
+            .from('daily_bakes')
             .select('*')
-            .order('created_at', { ascending: true });
+            .order('date', { ascending: true })
+            .order('shift', { ascending: true });
 
         if (error) {
             console.error('Error getting dough:', error);
             return [];
         }
-        return data || [];
+        
+        // Convert to old format for compatibility
+        return this._convertDailyBakesToOldFormat(data);
     }
 
     async getTodayDough() {
         const today = new Date().toISOString().split('T')[0];
         const { data, error } = await this.supabase
-            .from('dough')
+            .from('daily_bakes')
             .select('*')
             .eq('date', today)
             .order('created_at', { ascending: true });
@@ -63,12 +86,14 @@ class Database {
             console.error('Error getting today dough:', error);
             return [];
         }
-        return data || [];
+        
+        // Convert to old format for compatibility
+        return this._convertDailyBakesToOldFormat(data);
     }
 
     async getDoughByDate(date) {
         const { data, error } = await this.supabase
-            .from('dough')
+            .from('daily_bakes')
             .select('*')
             .eq('date', date);
 
@@ -76,13 +101,15 @@ class Database {
             console.error('Error getting dough by date:', error);
             return [];
         }
-        return data || [];
+        
+        // Convert to old format for compatibility
+        return this._convertDailyBakesToOldFormat(data);
     }
 
     async getDoughRecords() {
         const today = new Date().toISOString().split('T')[0];
         const { data, error } = await this.supabase
-            .from('dough')
+            .from('daily_bakes')
             .select('*')
             .lt('date', today)
             .order('date', { ascending: false });
@@ -91,12 +118,14 @@ class Database {
             console.error('Error getting dough records:', error);
             return [];
         }
-        return data || [];
+        
+        // Convert to old format for compatibility
+        return this._convertDailyBakesToOldFormat(data);
     }
 
     async getDoughRecordsByDateRange(startDate, endDate) {
         const { data, error } = await this.supabase
-            .from('dough')
+            .from('daily_bakes')
             .select('*')
             .gte('date', startDate)
             .lte('date', endDate)
@@ -106,22 +135,22 @@ class Database {
             console.error('Error getting dough records by range:', error);
             return [];
         }
-        return data || [];
+        
+        // Convert to old format for compatibility
+        return this._convertDailyBakesToOldFormat(data);
     }
 
     async updateDough(id, data) {
-        const morning_profit = (parseInt(data.morning_count) || 0) * 10 / 8;
-        const evening_profit = (parseInt(data.evening_count) || 0) * 10 / 8;
+        // For daily_bakes, we need to update the specific shift record
+        const dough_count = parseInt(data.morning_count || data.evening_count) || 0;
+        const total_profit = dough_count * 10 / 8;
 
         const { data: result, error } = await this.supabase
-            .from('dough')
+            .from('daily_bakes')
             .update({
                 date: data.date,
-                morning_count: parseInt(data.morning_count) || 0,
-                evening_count: parseInt(data.evening_count) || 0,
-                morning_profit: morning_profit,
-                evening_profit: evening_profit,
-                total_profit: morning_profit + evening_profit
+                dough_count: dough_count,
+                total_profit: total_profit
             })
             .eq('id', id)
             .select()
@@ -136,7 +165,7 @@ class Database {
 
     async deleteDough(id) {
         const { error } = await this.supabase
-            .from('dough')
+            .from('daily_bakes')
             .delete()
             .eq('id', id);
 
@@ -144,6 +173,40 @@ class Database {
             console.error('Error deleting dough:', error);
             throw error;
         }
+    }
+
+    // Helper function to convert daily_bakes format to old dough format
+    _convertDailyBakesToOldFormat(dailyBakes) {
+        if (!dailyBakes || dailyBakes.length === 0) return [];
+        
+        // Group by date
+        const grouped = {};
+        dailyBakes.forEach(bake => {
+            if (!grouped[bake.date]) {
+                grouped[bake.date] = {
+                    id: bake.id,
+                    date: bake.date,
+                    morning_count: 0,
+                    evening_count: 0,
+                    morning_profit: 0,
+                    evening_profit: 0,
+                    total_profit: 0,
+                    created_at: bake.created_at
+                };
+            }
+            
+            if (bake.shift === 'morning') {
+                grouped[bake.date].morning_count = bake.dough_count;
+                grouped[bake.date].morning_profit = bake.total_profit;
+            } else if (bake.shift === 'evening') {
+                grouped[bake.date].evening_count = bake.dough_count;
+                grouped[bake.date].evening_profit = bake.total_profit;
+            }
+            
+            grouped[bake.date].total_profit += bake.total_profit;
+        });
+        
+        return Object.values(grouped);
     }
 
     // ========================================
@@ -530,14 +593,11 @@ class Database {
             dateFilter = monthAgo.toISOString().split('T')[0];
         }
 
-        // Fetch all data
-        const [doughData, flourData, expensesData, differencesData] = await Promise.all([
+        // Fetch all data from new tables
+        const [doughData, expensesData, differencesData] = await Promise.all([
             period === 'today' 
-                ? this.supabase.from('dough').select('*').eq('date', dateFilter)
-                : this.supabase.from('dough').select('*').gte('date', dateFilter),
-            period === 'today'
-                ? this.supabase.from('flour').select('*').eq('date', dateFilter)
-                : this.supabase.from('flour').select('*').gte('date', dateFilter),
+                ? this.supabase.from('daily_bakes').select('*').eq('date', dateFilter)
+                : this.supabase.from('daily_bakes').select('*').gte('date', dateFilter),
             period === 'today'
                 ? this.supabase.from('expenses').select('*').eq('date', dateFilter)
                 : this.supabase.from('expenses').select('*').gte('date', dateFilter),
@@ -547,16 +607,23 @@ class Database {
         ]);
 
         const dough = doughData.data || [];
-        const flour = flourData.data || [];
         const expenses = expensesData.data || [];
         const differences = differencesData.data || [];
 
-        const totalDoughCount = dough.reduce((sum, d) => sum + d.morning_count + d.evening_count, 0);
+        // Calculate totals from new daily_bakes structure
+        const totalDoughCount = dough.reduce((sum, d) => sum + (d.dough_count || 0), 0);
         const totalProfit = dough.reduce((sum, d) => sum + parseFloat(d.total_profit || 0), 0);
-        const totalFlourCost = flour.reduce((sum, f) => sum + parseFloat(f.total_cost || 0), 0);
-        const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-        // الفروقات محفوظة بالألف (مثل باقي البيانات)
-        const totalDifferences = differences.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+        
+        // Split expenses: flour vs other expenses
+        const totalFlourCost = expenses
+            .filter(e => e.type === 'flour')
+            .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+        const totalExpenses = expenses
+            .filter(e => e.type !== 'flour')
+            .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+        
+        // Differences using new structure (total_value instead of amount)
+        const totalDifferences = differences.reduce((sum, d) => sum + parseFloat(d.total_value || 0), 0);
         const netProfit = totalProfit - totalFlourCost - totalExpenses - totalDifferences;
 
         return {
