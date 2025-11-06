@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>المصاريف - فرن حسين الدليمي</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="512x512" href="dul.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="dul.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="dul.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="dul.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="dul.png">
+    <meta name="theme-color" content="#FFD700">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,7 +34,6 @@
                 <li><a href="differences.html">الفروقات</a></li>
                 <li><a href="dough_records.html">سجل العجنات</a></li>
                 <li><a href="expenses.html" class="active">المصاريف</a></li>
-                <li><a href="profit.html">الربح النهائي</a></li>
             </ul>
         </nav>
 
@@ -207,7 +215,8 @@
 
             const formData = {
                 date: document.getElementById('date').value,
-                expense_name: expenseName,
+                note: expenseName,  // Using 'note' column in new schema
+                type: 'other',      // Default type
                 amount: amountInThousands
             };
 
@@ -275,11 +284,12 @@
             // تجميع المصاريف حسب التاريخ والاسم
             const grouped = {};
             expenses.forEach(record => {
-                const key = `${record.date}_${record.expense_name}`;
+                const expenseName = record.note || record.expense_name || 'غير محدد';
+                const key = `${record.date}_${expenseName}`;
                 if (!grouped[key]) {
                     grouped[key] = {
                         date: record.date,
-                        expense_name: record.expense_name,
+                        expense_name: expenseName,
                         total: 0,
                         count: 0,
                         details: []
@@ -313,8 +323,8 @@
                                 `<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem; margin-bottom: 5px;" onclick="showDetails('${detailsKey}')">عرض التفاصيل</button><br>` 
                                 : ''}
                             ${group.count === 1 ? 
-                                `<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editExpense(${group.details[0].id})">تعديل</button>
-                                 <button class="btn btn-danger" onclick="deleteExpense(${group.details[0].id})">حذف</button>`
+                                `<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editExpense('${group.details[0].id}')">تعديل</button>
+                                 <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.9rem;" onclick="deleteExpense('${group.details[0].id}')">حذف</button>`
                                 : `<button class="btn btn-danger" onclick="deleteGroupExpenses('${detailsKey}')">حذف الكل</button>`
                             }
                         </td>
@@ -351,8 +361,8 @@
                             <div style="color: var(--gold); font-size: 1.2rem; margin-top: 5px;">${formatThousands(detail.amount)} دينار</div>
                         </div>
                         <div>
-                            <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.9rem; margin-left: 5px;" onclick="editExpenseFromModal(${detail.id})">تعديل</button>
-                            <button class="btn btn-danger" style="padding: 5px 15px; font-size: 0.9rem;" onclick="deleteExpenseFromModal(${detail.id})">حذف</button>
+                            <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.9rem; margin-left: 5px;" onclick="editExpenseFromModal('${detail.id}')">تعديل</button>
+                            <button class="btn btn-danger" style="padding: 5px 15px; font-size: 0.9rem;" onclick="deleteExpenseFromModal('${detail.id}')">حذف</button>
                         </div>
                     </div>
                 `).join('')}
@@ -481,7 +491,7 @@
             // جمع المصاريف حسب الاسم
             const expensesByName = {};
             expenses.forEach(e => {
-                const name = e.expense_name;
+                const name = e.note || e.expense_name || 'غير محدد';
                 if (!expensesByName[name]) {
                     expensesByName[name] = {
                         name: name,
@@ -522,15 +532,17 @@
             if (record) {
                 // تحويل من الألف إلى الرقم الكامل للعرض في الحقل
                 const amountFull = record.amount * 1000;
+                const expenseName = record.note || record.expense_name || '';
                 
                 document.getElementById('date').value = record.date;
-                document.getElementById('expenseName').value = record.expense_name;
+                document.getElementById('expenseName').value = expenseName;
                 document.getElementById('amount').value = formatNumber(amountFull); // عرض الرقم الكامل مع فواصل
                 document.getElementById('displayAmount').textContent = formatNumber(amountFull);
                 editingId = id;
                 
                 // التمرير للأعلى
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                showAlert('جاري التعديل... قم بتحديث القيم واضغط حفظ', 'info');
             }
         }
 

@@ -378,6 +378,17 @@ class Database {
     async addElectricBread(data) {
         const jerqTotal = (parseInt(data.jerq_count) || 0) * 250;
         const circleTotal = this.calculateCirclePrice(parseInt(data.circle_count) || 0);
+        const totalProfit = jerqTotal + circleTotal;
+
+        // حساب التلف
+        const wasteJerqCount = parseInt(data.waste_jerq_count) || 0;
+        const wasteRoundCount = parseInt(data.waste_round_count) || 0;
+        const wasteJerqTotal = wasteJerqCount * 250;
+        const wasteRoundTotal = this.calculateCirclePrice(wasteRoundCount);
+        const totalWaste = wasteJerqTotal + wasteRoundTotal;
+
+        // صافي الربح
+        const netProfit = totalProfit - totalWaste;
 
         const { data: result, error } = await this.supabase
             .from('electric_bread')
@@ -387,7 +398,13 @@ class Database {
                 jerq_total: jerqTotal,
                 circle_count: parseInt(data.circle_count) || 0,
                 circle_total: circleTotal,
-                total_profit: jerqTotal + circleTotal
+                total_profit: totalProfit,
+                waste_jerq_count: wasteJerqCount,
+                waste_jerq_total: wasteJerqTotal,
+                waste_round_count: wasteRoundCount,
+                waste_round_total: wasteRoundTotal,
+                total_waste: totalWaste,
+                net_profit: netProfit
             }])
             .select()
             .single();
@@ -438,6 +455,17 @@ class Database {
     async updateElectricBread(id, data) {
         const jerqTotal = (parseInt(data.jerq_count) || 0) * 250;
         const circleTotal = this.calculateCirclePrice(parseInt(data.circle_count) || 0);
+        const totalProfit = jerqTotal + circleTotal;
+
+        // حساب التلف
+        const wasteJerqCount = parseInt(data.waste_jerq_count) || 0;
+        const wasteRoundCount = parseInt(data.waste_round_count) || 0;
+        const wasteJerqTotal = wasteJerqCount * 250;
+        const wasteRoundTotal = this.calculateCirclePrice(wasteRoundCount);
+        const totalWaste = wasteJerqTotal + wasteRoundTotal;
+
+        // صافي الربح
+        const netProfit = totalProfit - totalWaste;
 
         const { data: result, error } = await this.supabase
             .from('electric_bread')
@@ -447,7 +475,13 @@ class Database {
                 jerq_total: jerqTotal,
                 circle_count: parseInt(data.circle_count) || 0,
                 circle_total: circleTotal,
-                total_profit: jerqTotal + circleTotal
+                total_profit: totalProfit,
+                waste_jerq_count: wasteJerqCount,
+                waste_jerq_total: wasteJerqTotal,
+                waste_round_count: wasteRoundCount,
+                waste_round_total: wasteRoundTotal,
+                total_waste: totalWaste,
+                net_profit: netProfit
             })
             .eq('id', id)
             .select()
@@ -606,7 +640,7 @@ class Database {
         }
 
         // Fetch all data from new tables
-        const [doughData, expensesData, differencesData] = await Promise.all([
+        const [doughData, expensesData, differencesData, electricData] = await Promise.all([
             period === 'today' 
                 ? this.supabase.from('daily_bakes').select('*').eq('date', dateFilter)
                 : this.supabase.from('daily_bakes').select('*').gte('date', dateFilter),
@@ -615,16 +649,27 @@ class Database {
                 : this.supabase.from('expenses').select('*').gte('date', dateFilter),
             period === 'today'
                 ? this.supabase.from('differences').select('*').eq('date', dateFilter)
-                : this.supabase.from('differences').select('*').gte('date', dateFilter)
+                : this.supabase.from('differences').select('*').gte('date', dateFilter),
+            period === 'today'
+                ? this.supabase.from('electric_bread').select('*').eq('date', dateFilter)
+                : this.supabase.from('electric_bread').select('*').gte('date', dateFilter)
         ]);
 
         const dough = doughData.data || [];
         const expenses = expensesData.data || [];
         const differences = differencesData.data || [];
+        const electric = electricData.data || [];
 
         // Calculate totals from new daily_bakes structure
         const totalDoughCount = dough.reduce((sum, d) => sum + (d.dough_count || 0), 0);
         const totalProfit = dough.reduce((sum, d) => sum + parseFloat(d.total_profit || 0), 0);
+        
+        // Calculate electric bread profit (using net_profit which already excludes waste)
+        const totalElectricProfit = electric.reduce((sum, e) => {
+            // Use net_profit if available, otherwise fallback to total_profit
+            const profit = parseFloat(e.net_profit || e.total_profit || 0);
+            return sum + profit;
+        }, 0);
         
         // Split expenses: flour vs other expenses
         const totalFlourCost = expenses
@@ -634,13 +679,27 @@ class Database {
             .filter(e => e.type !== 'flour')
             .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
         
-        // Differences using new structure (total_value instead of amount)
+        // Differences using new structure (total_value instead of amount) - convert to dinars
         const totalDifferences = differences.reduce((sum, d) => sum + parseFloat(d.total_value || 0), 0);
+        const totalDifferencesInDinars = totalDifferences * 1000;
+        
+        // Total expenses in dinars (flour + other expenses)
+        const totalExpensesInDinars = (totalFlourCost + totalExpenses) * 1000;
+        
+        // Total profit including electric bread (convert to dinars to match electric)
+        const totalProfitInDinars = (totalProfit * 1000) + totalElectricProfit;
+        
+        // Final total after all deductions (in dinars)
+        const totalProfitWithElectric = totalProfitInDinars - totalExpensesInDinars - totalDifferencesInDinars;
+        
+        // Net profit for dough only (in thousands)
         const netProfit = totalProfit - totalFlourCost - totalExpenses - totalDifferences;
 
         return {
             doughCount: totalDoughCount,
             profit: totalProfit,
+            electricProfit: totalElectricProfit,
+            totalProfitWithElectric: totalProfitWithElectric,
             flourCost: totalFlourCost,
             expenses: totalExpenses,
             differences: totalDifferences,

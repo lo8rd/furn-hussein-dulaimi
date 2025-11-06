@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل الدخول - فرن حسين الدليمي</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="512x512" href="dul.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="dul.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="dul.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="dul.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="dul.png">
+    <meta name="theme-color" content="#FFD700">
+    
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -367,7 +376,7 @@
                         email: userEmail,
                         password: password,
                         options: {
-                            emailRedirectTo: window.location.origin + '/START_HERE.html',
+                            emailRedirectTo: window.location.origin + '/index.html',
                             data: {
                                 username: username,
                                 user_id: userData.id,
@@ -497,7 +506,7 @@
 
                 // Redirect to main page
                 setTimeout(() => {
-                    window.location.href = 'START_HERE.html';
+                    window.location.href = 'index.html';
                 }, 1500);
 
             } catch (err) {
@@ -521,7 +530,7 @@
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
                     // User is already logged in, redirect to main page
-                    window.location.href = 'START_HERE.html';
+                    window.location.href = 'index.html';
                 }
             } catch (error) {
                 console.log('Session check error:', error);

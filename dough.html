@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>العجنات اليومية - فرن حسين الدليمي</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="512x512" href="dul.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="dul.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="dul.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="dul.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="dul.png">
+    <meta name="theme-color" content="#FFD700">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,7 +34,6 @@
                 <li><a href="differences.html">الفروقات</a></li>
                 <li><a href="dough_records.html">سجل العجنات</a></li>
                 <li><a href="expenses.html">المصاريف</a></li>
-                <li><a href="profit.html">الربح النهائي</a></li>
             </ul>
         </nav>
 
@@ -91,12 +99,10 @@
                     <thead>
                         <tr>
                             <th>التاريخ</th>
-                            <th>الصباح</th>
-                            <th>المساء</th>
-                            <th>الإجمالي</th>
-                            <th>ربح الصباح</th>
-                            <th>ربح المساء</th>
-                            <th>الربح الكلي</th>
+                            <th>الفترة</th>
+                            <th>عدد العجنات</th>
+                            <th colspan="2"></th>
+                            <th colspan="2">الربح (ألف دينار)</th>
                             <th>إجراءات</th>
                         </tr>
                     </thead>
@@ -139,21 +145,60 @@
         document.getElementById('doughForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const formData = {
-                date: document.getElementById('date').value,
-                morning_count: document.getElementById('morningCount').value,
-                evening_count: document.getElementById('eveningCount').value
-            };
+            const morningCount = parseInt(document.getElementById('morningCount').value) || 0;
+            const eveningCount = parseInt(document.getElementById('eveningCount').value) || 0;
+            const date = document.getElementById('date').value;
 
             try {
                 if (editingId) {
-                    // تحديث السجل
-                    await db.updateDough(editingId, formData);
+                    // تحديث السجل الموجود
+                    const count = morningCount > 0 ? morningCount : eveningCount;
+                    const profit = count * 10 / 8;
+                    
+                    const { error } = await db.supabase
+                        .from('daily_bakes')
+                        .update({
+                            date: date,
+                            dough_count: count,
+                            total_profit: profit
+                        })
+                        .eq('id', editingId);
+
+                    if (error) throw error;
                     showAlert('تم تحديث البيانات بنجاح!', 'success');
                     editingId = null;
                 } else {
-                    // إضافة سجل جديد
-                    await db.addDough(formData);
+                    // إضافة سجل جديد (فترة واحدة أو اثنتين)
+                    const records = [];
+                    
+                    if (morningCount > 0) {
+                        records.push({
+                            date: date,
+                            shift: 'morning',
+                            dough_count: morningCount,
+                            total_profit: morningCount * 10 / 8
+                        });
+                    }
+                    
+                    if (eveningCount > 0) {
+                        records.push({
+                            date: date,
+                            shift: 'evening',
+                            dough_count: eveningCount,
+                            total_profit: eveningCount * 10 / 8
+                        });
+                    }
+                    
+                    if (records.length === 0) {
+                        showAlert('الرجاء إدخال عدد العجنات لفترة واحدة على الأقل!', 'danger');
+                        return;
+                    }
+
+                    const { error } = await db.supabase
+                        .from('daily_bakes')
+                        .insert(records);
+
+                    if (error) throw error;
                     showAlert('تم حفظ البيانات بنجاح!', 'success');
                 }
 
@@ -185,54 +230,75 @@
 
         // تحميل جدول العجنات (عجنات اليوم فقط - من الأول إلى الأخير)
         async function loadDoughTable() {
-            const dough = await db.getTodayDough(); // يتم الترتيب تصاعدياً من الدالة
+            const today = new Date().toISOString().split('T')[0];
+            const { data: dough, error } = await db.supabase
+                .from('daily_bakes')
+                .select('*')
+                .eq('date', today)
+                .order('created_at', { ascending: true });
+
             const tbody = document.getElementById('doughTableBody');
 
-            if (dough.length === 0) {
-                const today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            if (!dough || dough.length === 0) {
+                const todayFormatted = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="8" class="empty-state">
                             <div class="empty-state-icon">📋</div>
                             <p>لا توجد عجنات مسجلة لهذا اليوم</p>
-                            <p style="font-size: 0.9rem; color: var(--light-gray); margin-top: 10px;">${today}</p>
+                            <p style="font-size: 0.9rem; color: var(--light-gray); margin-top: 10px;">${todayFormatted}</p>
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            tbody.innerHTML = dough.map((record, index) => `
-                <tr>
-                    <td>${record.date}</td>
-                    <td>${formatNumber(record.morning_count, 0)}</td>
-                    <td>${formatNumber(record.evening_count, 0)}</td>
-                    <td><strong>${formatNumber(record.morning_count + record.evening_count, 0)}</strong></td>
-                    <td>${formatThousands(record.morning_profit)}</td>
-                    <td>${formatThousands(record.evening_profit)}</td>
-                    <td><strong>${formatThousands(record.total_profit)}</strong></td>
-                    <td>
-                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editDough(${record.id})">تعديل</button>
-                        <button class="btn btn-danger" onclick="deleteDough(${record.id})">حذف</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = dough.map((record, index) => {
+                const shiftName = record.shift === 'morning' ? 'صباح' : 'مساء';
+                const shiftIcon = record.shift === 'morning' ? '🌅' : '🌙';
+                
+                return `
+                    <tr>
+                        <td>${record.date}</td>
+                        <td>${shiftIcon} ${shiftName}</td>
+                        <td><strong>${formatNumber(record.dough_count, 0)}</strong></td>
+                        <td colspan="2"></td>
+                        <td colspan="2"><strong style="color: var(--gold);">${formatThousands(record.total_profit)}</strong></td>
+                        <td>
+                            <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editDough('${record.id}', '${record.shift}')">تعديل</button>
+                            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.9rem;" onclick="deleteDough('${record.id}')">حذف</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // تعديل عجنة
-        async function editDough(id) {
-            const dough = await db.getTodayDough();
-            const record = dough.find(d => d.id === id);
+        async function editDough(id, shift) {
+            const { data: record, error } = await db.supabase
+                .from('daily_bakes')
+                .select('*')
+                .eq('id', id)
+                .single();
             
             if (record) {
                 document.getElementById('date').value = record.date;
-                document.getElementById('morningCount').value = record.morning_count;
-                document.getElementById('eveningCount').value = record.evening_count;
+                
+                // Set the count in the appropriate field based on shift
+                if (shift === 'morning') {
+                    document.getElementById('morningCount').value = record.dough_count;
+                    document.getElementById('eveningCount').value = 0;
+                } else {
+                    document.getElementById('morningCount').value = 0;
+                    document.getElementById('eveningCount').value = record.dough_count;
+                }
+                
                 calculateProfit();
                 editingId = id;
                 
                 // التمرير للأعلى
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                showAlert('جاري التعديل... قم بتحديث القيم واضغط حفظ', 'info');
             }
         }
 
@@ -240,12 +306,17 @@
         async function deleteDough(id) {
             if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
                 try {
-                    await db.deleteDough(id);
+                    const { error } = await db.supabase
+                        .from('daily_bakes')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
                     showAlert('تم حذف السجل بنجاح!', 'success');
                     await loadDoughTable();
                 } catch (error) {
                     console.error('Error deleting dough:', error);
-                    showAlert('حدث خطأ أثناء الحذف', 'danger');
+                    showAlert('حدث خطأ أثناء الحذف: ' + error.message, 'danger');
                 }
             }
         }

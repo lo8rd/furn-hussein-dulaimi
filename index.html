@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>فرن حسين الدليمي - نظام إدارة الفرن</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="512x512" href="dul.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="dul.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="dul.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="dul.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="dul.png">
+    <meta name="theme-color" content="#FFD700">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,11 +34,10 @@
                 <li><a href="differences.html">الفروقات</a></li>
                 <li><a href="dough_records.html">سجل العجنات</a></li>
                 <li><a href="expenses.html">المصاريف</a></li>
-                <li><a href="profit.html">الربح النهائي</a></li>
             </ul>
         </nav>
 
-        <div class="cards-grid" id="statsCards">
+        <div class="cards-grid" id="statsCards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
             <div class="card">
                 <div class="card-title">عجنات اليوم</div>
                 <div class="card-value" id="todayDough">0</div>
@@ -37,9 +45,21 @@
             </div>
 
             <div class="card">
-                <div class="card-title">الربح المتوقع</div>
+                <div class="card-title">ربح العجنات</div>
                 <div class="card-value" id="todayProfit">0</div>
                 <div class="card-label">ألف دينار</div>
+            </div>
+
+            <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-title" style="color: var(--white);"> ربح الكهربائي</div>
+                <div class="card-value" id="electricProfit" style="color: var(--white); font-size: 2rem;">0</div>
+                <div class="card-label" style="color: var(--white);">دينار (بعد خصم التلف)</div>
+            </div>
+
+            <div class="card" style="border: 3px solid var(--success); background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);">
+                <div class="card-title"> المبلغ الإجمالي النهائي</div>
+                <div class="card-value" id="totalWithElectric" style="color: var(--success); font-size: 2.5rem;">0</div>
+                <div class="card-label">دينار (بعد كل الخصومات)</div>
             </div>
 
             <div class="card">
@@ -56,12 +76,481 @@
         </div>
 
         <p style="text-align: center; color: var(--light-gray); margin-top: 15px; font-size: 0.9rem;">
-            💡 الأرباح معروضة بالألف دينار للتبسيط | المصاريف بالدينار العادي
+            💡 المبلغ الإجمالي = (ربح العجنات + ربح الكهربائي) - (المصاريف + الفروقات)
         </p>
 
         <div class="btn-group">
             <a href="dough.html" class="btn btn-primary">إضافة عجنات جديدة</a>
-            <a href="profit.html" class="btn btn-primary">عرض التقارير المفصلة</a>
+            <a href="dough_records.html" class="btn btn-primary">عرض سجل العجنات</a>
+        </div>
+
+        <!-- دليل الاستخدام -->
+        <div class="form-container" style="margin-top: 30px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(0, 0, 0, 0.9) 100%);">
+            <div style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleInstructions()">
+                <h2 style="color: var(--gold); margin: 0;">📘 دليل استخدام النظام</h2>
+                <span id="toggleIcon" style="color: var(--gold); font-size: 1.5rem; transition: transform 0.3s;">▼</span>
+            </div>
+            
+            <div id="instructionsContent" style="display: none; margin-top: 20px; max-height: 600px; overflow-y: auto; padding-right: 10px;">
+                
+                <!-- مقدمة -->
+                <div style="background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 10px; border-right: 4px solid var(--gold); margin-bottom: 25px;">
+                    <h3 style="color: var(--gold); margin-bottom: 10px;">🎯 مرحباً بك في نظام إدارة فرن حسين الدليمي</h3>
+                    <p style="color: var(--white); line-height: 1.8;">
+                        هذا النظام المتكامل يساعدك على إدارة جميع عمليات الفرن بكفاءة عالية، من تسجيل العجنات اليومية 
+                        إلى حساب الأرباح والمصروفات بدقة. تم تصميم النظام ليكون سهل الاستخدام ويوفر لك معلومات فورية عن أداء الفرن.
+                    </p>
+                </div>
+
+                <!-- 1. تسجيل الدخول -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        🔐 1. تسجيل الدخول للنظام
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: var(--gold); margin-bottom: 10px;">📝 خطوات الدخول:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li><strong>افتح صفحة تسجيل الدخول</strong> (login.html)</li>
+                            <li><strong>أدخل اسم المستخدم</strong></li>
+                            <li><strong>أدخل كلمة المرور</strong></li>
+                            <li><strong>اضغط "تسجيل الدخول"</strong> وانتظر ظهور رسالة التحميل</li>
+                            <li><strong>سيتم توجيهك تلقائياً</strong> إلى الصفحة الرئيسية بعد نجاح الدخول</li>
+                        </ul>
+                        <div style="background: rgba(255, 215, 0, 0.1); padding: 10px; border-radius: 5px; margin-top: 10px;">
+                            <strong style="color: var(--gold);">💡 ملاحظة:</strong>
+                            <span style="color: var(--white);"> الجلسة تبقى نشطة حتى بعد إغلاق المتصفح. لتسجيل الخروج، اضغط على زر "تسجيل الخروج" 🚪</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. العجنات اليومية -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        🍞 2. إضافة العجنات اليومية
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: var(--gold); margin-bottom: 10px;">📋 خطوات الإضافة:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>افتح صفحة <strong>"العجنات اليومية"</strong> من القائمة الرئيسية</li>
+                            <li>اختر <strong>التاريخ</strong> المطلوب (افتراضياً: اليوم)</li>
+                            <li>أدخل <strong>عدد عجنات الصباح</strong> (مثال: 45 عجنة)</li>
+                            <li>أدخل <strong>عدد عجنات المساء</strong> (مثال: 50 عجنة)</li>
+                            <li>سيتم <strong>حساب الربح تلقائياً</strong> بناءً على المعادلة</li>
+                            <li>اضغط <strong>"حفظ البيانات"</strong> لإضافة السجل</li>
+                        </ul>
+                        
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">🔢 معادلة حساب الربح:</h4>
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 5px; border-right: 3px solid var(--gold);">
+                            <p style="color: var(--white); font-size: 1.1rem; margin-bottom: 10px;">
+                                <strong>الربح = (عدد العجنات × 10) ÷ 8</strong>
+                            </p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                مثال 1: 40 عجنة صباح → (40 × 10) ÷ 8 = <strong style="color: var(--gold);">50 ألف دينار</strong>
+                            </p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                مثال 2: 56 عجنة مساء → (56 × 10) ÷ 8 = <strong style="color: var(--gold);">70 ألف دينار</strong>
+                            </p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                الربح الإجمالي = 50 + 70 = <strong style="color: var(--gold);">120 ألف دينار</strong>
+                            </p>
+                        </div>
+
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">✏️ تعديل أو حذف سجل:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>انتقل إلى <strong>جدول العجنات</strong> أسفل الصفحة</li>
+                            <li>لكل سجل (صباح أو مساء)، ستجد زرين:</li>
+                            <li><strong style="color: #ffc107;">زر "تعديل" ✏️:</strong> لتعديل عدد العجنات أو التاريخ</li>
+                            <li><strong style="color: #dc3545;">زر "حذف" 🗑️:</strong> لحذف السجل بالكامل</li>
+                            <li>سيتم <strong>تحديث الجدول تلقائياً</strong> بعد كل عملية</li>
+                        </ul>
+
+                        <div style="background: rgba(255, 215, 0, 0.1); padding: 10px; border-radius: 5px; margin-top: 15px;">
+                            <strong style="color: var(--gold);">⚠️ هام:</strong>
+                            <span style="color: var(--white);"> الأرقام المعروضة في ربح العجنات تكون <strong>بالآلاف</strong> (50 = 50,000 دينار)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. الصمون الكهربائي -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        ⚡ 3. حساب ربح الصمون الكهربائي
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: var(--gold); margin-bottom: 10px;">🔸 قسم الإنتاج:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>افتح صفحة <strong>"الكهربائي"</strong> من القائمة</li>
+                            <li>أدخل <strong>عدد الچرك</strong> (كل قطعة = 250 دينار)</li>
+                            <li>أدخل <strong>عدد الدائري</strong> حسب التسعيرة:</li>
+                        </ul>
+                        
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 5px; margin: 15px 0; border-right: 3px solid var(--gold);">
+                            <h5 style="color: var(--gold); margin-bottom: 10px;">💰 تسعيرة الدائري:</h5>
+                            <ul style="color: var(--white); list-style: none; padding-right: 0;">
+                                <li style="margin: 5px 0;">• 3 دائري = 500 دينار</li>
+                                <li style="margin: 5px 0;">• 4 دائري = 750 دينار</li>
+                                <li style="margin: 5px 0;">• 6 دائري = 1,000 دينار</li>
+                                <li style="margin: 5px 0;">• أعداد أخرى: (العدد ÷ 3) × 500</li>
+                            </ul>
+                        </div>
+
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">🗑️ قسم التلف (مهم جداً):</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>أدخل <strong>عدد تلف الچرك</strong> (كل قطعة = 250 دينار)</li>
+                            <li>أدخل <strong>عدد تلف الدائري</strong> (نفس تسعيرة الإنتاج)</li>
+                            <li>سيتم <strong>حساب إجمالي التلف تلقائياً</strong></li>
+                            <li>سيتم <strong>خصم التلف من الربح</strong> لإظهار صافي الربح</li>
+                        </ul>
+
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 5px; margin: 15px 0; border-right: 3px solid #667eea;">
+                            <h5 style="color: #a78bfa; margin-bottom: 10px;">🧮 مثال عملي:</h5>
+                            <p style="color: var(--white); margin: 5px 0;">إنتاج: 80 چرك + 12 دائري</p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                → ربح الچرك = 80 × 250 = <strong style="color: var(--gold);">20,000 دينار</strong>
+                            </p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                → ربح الدائري = (12 ÷ 3) × 500 = <strong style="color: var(--gold);">2,000 دينار</strong>
+                            </p>
+                            <p style="color: var(--gold); margin: 10px 0; font-weight: bold;">
+                                إجمالي الربح = 22,000 دينار
+                            </p>
+                            <hr style="border-color: rgba(255, 255, 255, 0.2); margin: 10px 0;">
+                            <p style="color: var(--white); margin: 5px 0;">تلف: 5 چرك + 3 دائري</p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                → تلف الچرك = 5 × 250 = <strong style="color: #dc3545;">1,250 دينار</strong>
+                            </p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                → تلف الدائري = 3 × (500÷3) = <strong style="color: #dc3545;">500 دينار</strong>
+                            </p>
+                            <p style="color: #dc3545; margin: 10px 0; font-weight: bold;">
+                                إجمالي التلف = 1,750 دينار
+                            </p>
+                            <hr style="border-color: rgba(255, 255, 255, 0.2); margin: 10px 0;">
+                            <p style="color: var(--success); margin: 5px 0; font-size: 1.1rem; font-weight: bold;">
+                                صافي الربح = 22,000 - 1,750 = 20,250 دينار
+                            </p>
+                        </div>
+
+                        <div style="background: rgba(255, 215, 0, 0.1); padding: 10px; border-radius: 5px; margin-top: 15px;">
+                            <strong style="color: var(--gold);">💡 ملاحظة:</strong>
+                            <span style="color: var(--white);"> أرقام الكهربائي تُعرض <strong>بالدينار العادي</strong> (وليس بالآلاف)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. الفروقات -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        📉 4. تسجيل الفروقات
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: var(--gold); margin-bottom: 10px;">📝 ما هي الفروقات؟</h4>
+                        <p style="color: var(--light-gray); line-height: 1.8;">
+                            الفروقات هي الخصومات التي تحدث بسبب التلف أو الصمون المُقدم للمطاعم والكافتيريات بأسعار خاصة.
+                            يُحسب تأثيرها على المبلغ الإجمالي النهائي.
+                        </p>
+
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">🔸 أنواع الفروقات:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li><strong style="color: #dc3545;">تلف:</strong> صمون تالف لا يمكن بيعه</li>
+                            <li><strong style="color: #17a2b8;">مطعم:</strong> صمون مُقدم للمطاعم بأسعار مخفضة</li>
+                            <li><strong style="color: #ffc107;">أخرى:</strong> أي جهة أخرى (كافتيريا، محل، إلخ)</li>
+                        </ul>
+
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">➕ خطوات الإضافة:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>افتح صفحة <strong>"الفروقات"</strong></li>
+                            <li>اختر <strong>التاريخ</strong></li>
+                            <li>أدخل <strong>نوع الفروقات</strong> (تلف، مطعم، أو اسم الجهة)</li>
+                            <li>أدخل <strong>العدد</strong> (كمية الصمون)</li>
+                            <li>سيتم <strong>حساب القيمة تلقائياً</strong> بالمعادلة</li>
+                        </ul>
+
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 5px; margin: 15px 0; border-right: 3px solid var(--gold);">
+                            <h5 style="color: var(--gold); margin-bottom: 10px;">🔢 معادلة حساب قيمة الفروقات:</h5>
+                            <p style="color: var(--white); font-size: 1.1rem; margin-bottom: 10px;">
+                                <strong>القيمة = (العدد ÷ 8) × 1,000 دينار</strong>
+                            </p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                مثال 1: 16 صمون تلف → (16 ÷ 8) × 1000 = <strong style="color: #dc3545;">2,000 دينار</strong>
+                            </p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                مثال 2: 40 صمون مطعم → (40 ÷ 8) × 1000 = <strong style="color: #dc3545;">5,000 دينار</strong>
+                            </p>
+                            <p style="color: var(--light-gray); margin: 5px 0;">
+                                مثال 3: 24 صمون كافتيريا → (24 ÷ 8) × 1000 = <strong style="color: #dc3545;">3,000 دينار</strong>
+                            </p>
+                        </div>
+
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">🔍 البحث والفلترة:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>يمكنك <strong>البحث عن فروقات معينة</strong> من خلال اسم الجهة أو النوع</li>
+                            <li>عرض <strong>التفاصيل الكاملة</strong> بالضغط على زر "عرض التفاصيل"</li>
+                            <li><strong>تعديل أو حذف</strong> أي سجل من الجدول مباشرة</li>
+                        </ul>
+
+                        <div style="background: rgba(220, 53, 69, 0.1); padding: 10px; border-radius: 5px; margin-top: 15px; border-right: 3px solid #dc3545;">
+                            <strong style="color: #dc3545;">⚠️ تنبيه:</strong>
+                            <span style="color: var(--white);"> الفروقات تُخصم من المبلغ الإجمالي النهائي. القيم المعروضة بالدينار العادي.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. المصروفات -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        💰 5. إدارة المصروفات
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: var(--gold); margin-bottom: 10px;">📋 أنواع المصروفات:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li><strong style="color: #17a2b8;">مصاريف العمال:</strong> أجور العمالة اليومية</li>
+                            <li><strong style="color: #28a745;">مصاريف الطحين:</strong> تكلفة شراء الطحين</li>
+                            <li><strong style="color: #ffc107;">مصاريف أخرى:</strong> أي مصروفات إضافية (وقود، صيانة، إلخ)</li>
+                        </ul>
+
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">➕ إضافة مصروف جديد:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>افتح صفحة <strong>"المصاريف"</strong></li>
+                            <li>اختر <strong>التاريخ</strong></li>
+                            <li>اختر <strong>نوع المصروف</strong> (عمال، طحين، أخرى)</li>
+                            <li>أدخل <strong>المبلغ بالآلاف</strong> (مثال: 45 = 45,000 دينار)</li>
+                            <li>أضف <strong>ملاحظة اختيارية</strong> (مثال: " چد موسى ")</li>
+                            <li>اضغط <strong>"حفظ المصروف"</strong></li>
+                        </ul>
+
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 5px; margin: 15px 0; border-right: 3px solid #17a2b8;">
+                            <h5 style="color: #17a2b8; margin-bottom: 10px;">💡 مثال على المصروفات اليومية:</h5>
+                            <table style="width: 100%; color: var(--white); border-collapse: collapse;">
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                    <td style="padding: 8px;">مصاريف العمال</td>
+                                    <td style="padding: 8px; text-align: left;">30 ألف (30,000 دينار)</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                    <td style="padding: 8px;">مصاريف الطحين</td>
+                                    <td style="padding: 8px; text-align: left;">25 ألف (25,000 دينار)</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                    <td style="padding: 8px;">مصاريف أخرى</td>
+                                    <td style="padding: 8px; text-align: left;">10 ألف (10,000 دينار)</td>
+                                </tr>
+                                <tr style="background: rgba(255, 215, 0, 0.1);">
+                                    <td style="padding: 8px;"><strong>الإجمالي</strong></td>
+                                    <td style="padding: 8px; text-align: left;"><strong style="color: var(--gold);">65 ألف (65,000 دينار)</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">📊 عرض وإدارة المصروفات:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>يتم <strong>تجميع المصروفات حسب النوع والتاريخ</strong></li>
+                            <li>يمكنك <strong>عرض التفاصيل الكاملة</strong> لكل مصروف</li>
+                            <li><strong>تعديل أو حذف</strong> أي مصروف من الجدول</li>
+                            <li>عرض <strong>أكثر المصروفات</strong> في اليوم الحالي</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 6. حساب المبلغ الإجمالي -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        💵 6. فهم حساب المبلغ الإجمالي النهائي
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: var(--gold); margin-bottom: 15px;">🧮 المعادلة الكاملة:</h4>
+                        
+                        <div style="background: linear-gradient(135deg, rgba(40, 167, 69, 0.2) 0%, rgba(0, 0, 0, 0.5) 100%); padding: 20px; border-radius: 10px; border: 2px solid var(--success);">
+                            <p style="color: var(--success); font-size: 1.3rem; font-weight: bold; text-align: center; margin-bottom: 20px;">
+                                المبلغ الإجمالي النهائي
+                            </p>
+                            <p style="color: var(--white); font-size: 1.1rem; text-align: center; margin: 15px 0;">
+                                = (ربح العجنات + ربح الكهربائي) - (المصاريف + الفروقات)
+                            </p>
+                        </div>
+
+                        <h4 style="color: var(--gold); margin-top: 25px; margin-bottom: 15px;">📊 شرح تفصيلي:</h4>
+                        
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 5px; margin: 15px 0;">
+                            <h5 style="color: #28a745; margin-bottom: 10px;">✅ الدخل (ما يُضاف):</h5>
+                            <ul style="color: var(--light-gray); line-height: 1.8;">
+                                <li><strong>ربح العجنات:</strong> يُعرض بالآلاف، ويُحول إلى دينار عند الحساب
+                                    <br><span style="color: var(--white);">مثال: 120 ألف → 120,000 دينار</span>
+                                </li>
+                                <li><strong>ربح الكهربائي:</strong> صافي الربح (بعد خصم تلف الكهربائي) بالدينار مباشرة
+                                    <br><span style="color: var(--white);">مثال: 20,250 دينار</span>
+                                </li>
+                            </ul>
+                            <p style="color: var(--success); font-weight: bold; margin-top: 10px;">
+                                → إجمالي الدخل = 120,000 + 20,250 = <strong>140,250 دينار</strong>
+                            </p>
+                        </div>
+
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 5px; margin: 15px 0;">
+                            <h5 style="color: #dc3545; margin-bottom: 10px;">❌ المصروفات (ما يُخصم):</h5>
+                            <ul style="color: var(--light-gray); line-height: 1.8;">
+                                <li><strong>مصاريف العمال:</strong> 30 ألف → 30,000 دينار</li>
+                                <li><strong>مصاريف الطحين:</strong> 25 ألف → 25,000 دينار</li>
+                                <li><strong>مصاريف أخرى:</strong> 10 ألف → 10,000 دينار</li>
+                            </ul>
+                            <p style="color: #dc3545; font-weight: bold; margin-top: 10px;">
+                                → إجمالي المصروفات = <strong>65,000 دينار</strong>
+                            </p>
+                        </div>
+
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 5px; margin: 15px 0;">
+                            <h5 style="color: #ffc107; margin-bottom: 10px;">⚠️ الفروقات (ما يُخصم):</h5>
+                            <ul style="color: var(--light-gray); line-height: 1.8;">
+                                <li><strong>تلف:</strong> 2,000 دينار</li>
+                                <li><strong>مطاعم:</strong> 5,000 دينار</li>
+                                <li><strong>أخرى:</strong> 3,000 دينار</li>
+                            </ul>
+                            <p style="color: #ffc107; font-weight: bold; margin-top: 10px;">
+                                → إجمالي الفروقات = <strong>10,000 دينار</strong>
+                            </p>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, rgba(40, 167, 69, 0.3) 0%, rgba(40, 167, 69, 0.1) 100%); padding: 20px; border-radius: 10px; border: 3px solid var(--success); margin-top: 25px;">
+                            <h5 style="color: var(--success); font-size: 1.2rem; margin-bottom: 15px; text-align: center;">🎯 النتيجة النهائية:</h5>
+                            <p style="color: var(--white); font-size: 1.1rem; text-align: center; margin: 10px 0;">
+                                المبلغ الإجمالي النهائي = 140,250 - 65,000 - 10,000
+                            </p>
+                            <p style="color: var(--success); font-size: 1.5rem; font-weight: bold; text-align: center; margin-top: 15px;">
+                                = 65,250 دينار
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. سجل العجنات -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        📚 7. سجل العجنات والبحث
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: var(--gold); margin-bottom: 10px;">🔍 البحث عن سجلات سابقة:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>افتح صفحة <strong>"سجل العجنات"</strong></li>
+                            <li>اختر نوع البحث: <strong>يوم واحد</strong> أو <strong>فترة زمنية</strong></li>
+                            <li>أدخل <strong>التاريخ المطلوب</strong> (أو تاريخ البداية والنهاية)</li>
+                            <li>اضغط <strong>"بحث"</strong> لعرض النتائج</li>
+                        </ul>
+
+                        <h4 style="color: var(--gold); margin-top: 20px; margin-bottom: 10px;">📊 عرض البيانات:</h4>
+                        <ul style="color: var(--light-gray); line-height: 1.8;">
+                            <li>يتم <strong>تجميع البيانات حسب اليوم</strong></li>
+                            <li>لكل يوم، ستجد <strong>ملخص شامل</strong> يحتوي على:</li>
+                            <ul style="margin-top: 10px; margin-bottom: 10px;">
+                                <li>عدد عجنات الصباح والمساء</li>
+                                <li>إجمالي الربح اليومي</li>
+                                <li>المصروفات والفروقات</li>
+                            </ul>
+                            <li>يمكنك <strong>عرض التفاصيل الكاملة</strong> لأي يوم</li>
+                            <li>إمكانية <strong>تعديل أو حذف</strong> أي سجل من السجلات</li>
+                        </ul>
+
+                        <div style="background: rgba(255, 215, 0, 0.1); padding: 10px; border-radius: 5px; margin-top: 15px;">
+                            <strong style="color: var(--gold);">💡 نصيحة:</strong>
+                            <span style="color: var(--white);"> استخدم سجل العجنات لمقارنة الأداء بين الأيام المختلفة وتحليل الأرباح</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. ملاحظات عامة -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        ⚙️ 8. ملاحظات عامة مهمة
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        
+                        <div style="background: rgba(40, 167, 69, 0.1); padding: 15px; border-radius: 5px; margin-bottom: 15px; border-right: 3px solid var(--success);">
+                            <h4 style="color: var(--success); margin-bottom: 10px;">✅ الحفظ التلقائي:</h4>
+                            <p style="color: var(--light-gray); line-height: 1.8;">
+                                جميع البيانات تُحفظ تلقائياً في قاعدة بيانات Supabase السحابية. 
+                                لا داعي للقلق من فقدان البيانات عند إغلاق المتصفح أو انقطاع الإنترنت (سيتم المزامنة عند العودة).
+                            </p>
+                        </div>
+
+                        <div style="background: rgba(255, 215, 0, 0.1); padding: 15px; border-radius: 5px; margin-bottom: 15px; border-right: 3px solid var(--gold);">
+                            <h4 style="color: var(--gold); margin-bottom: 10px;">🔢 تنسيق الأرقام:</h4>
+                            <ul style="color: var(--light-gray); line-height: 1.8;">
+                                <li><strong>الأرقام بالآلاف:</strong> تُستخدم في ربح العجنات والمصروفات
+                                    <br><span style="color: var(--white);">مثال: 120 = 120,000 دينار</span>
+                                </li>
+                                <li><strong>الأرقام بالدينار العادي:</strong> تُستخدم في الكهربائي والفروقات والمبلغ الإجمالي
+                                    <br><span style="color: var(--white);">مثال: 20,250 = عشرون ألفاً ومائتان وخمسون ديناراً</span>
+                                </li>
+                                <li><strong>فواصل الآلاف:</strong> تُضاف تلقائياً لسهولة القراءة (12,500 بدلاً من 12500)</li>
+                                <li><strong>بدون كسور عشرية:</strong> جميع الأرقام تُعرض بدون فاصلة عشرية</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: rgba(23, 162, 184, 0.1); padding: 15px; border-radius: 5px; margin-bottom: 15px; border-right: 3px solid #17a2b8;">
+                            <h4 style="color: #17a2b8; margin-bottom: 10px;">📅 التاريخ والوقت:</h4>
+                            <ul style="color: var(--light-gray); line-height: 1.8;">
+                                <li>التاريخ الافتراضي في جميع الصفحات هو <strong>اليوم الحالي</strong></li>
+                                <li>يمكنك <strong>تغيير التاريخ</strong> لتسجيل بيانات سابقة أو مستقبلية</li>
+                                <li>الصفحة الرئيسية تعرض <strong>إحصائيات اليوم فقط</strong></li>
+                                <li>تحديث تلقائي كل <strong>30 ثانية</strong> للصفحة الرئيسية</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 5px; margin-bottom: 15px; border-right: 3px solid #667eea;">
+                            <h4 style="color: #a78bfa; margin-bottom: 10px;">🎨 واجهة المستخدم:</h4>
+                            <ul style="color: var(--light-gray); line-height: 1.8;">
+                                <li>التصميم يدعم <strong>اللغة العربية بالكامل</strong> (اتجاه RTL)</li>
+                                <li><strong>الألوان:</strong> أسود وذهبي (سمة فرن حسين الدليمي)</li>
+                                <li><strong>متجاوب:</strong> يعمل بكفاءة على الموبايل والكمبيوتر</li>
+                                <li><strong>رسوم متحركة:</strong> تحريك سلس للأرقام والانتقالات</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: rgba(220, 53, 69, 0.1); padding: 15px; border-radius: 5px; border-right: 3px solid #dc3545;">
+                            <h4 style="color: #dc3545; margin-bottom: 10px;">⚠️ تنبيهات مهمة:</h4>
+                            <ul style="color: var(--light-gray); line-height: 1.8;">
+                                <li>تأكد من <strong>الاتصال بالإنترنت</strong> عند استخدام النظام</li>
+                                <li><strong>لا تشارك بيانات تسجيل الدخول</strong> مع أي شخص غير مصرح له</li>
+                                <li>عند <strong>حذف أي سجل</strong>، لا يمكن استرجاعه (تأكد قبل الحذف)</li>
+                                <li><strong>راجع الأرقام</strong> قبل الحفظ للتأكد من صحتها</li>
+                                <li>استخدم زر <strong>"تسجيل الخروج"</strong> عند الانتهاء من العمل</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. الدعم الفني -->
+                <div class="instruction-section">
+                    <h3 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; margin-bottom: 15px;">
+                        🛠️ 9. الدعم الفني والمساعدة
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(0, 0, 0, 0.3) 100%); padding: 20px; border-radius: 10px; border: 2px solid var(--gold);">
+                            <h4 style="color: var(--gold); margin-bottom: 15px; text-align: center;">📞 في حالة وجود أي مشكلة أو استفسار</h4>
+                            <p style="color: var(--white); line-height: 1.8; text-align: center;">
+                                النظام مُصمم ليكون سهل الاستخدام وواضح. إذا واجهت أي صعوبة:
+                            </p>
+                            <ul style="color: var(--light-gray); line-height: 2; margin-top: 15px;">
+                                <li>تحقق من <strong>اتصالك بالإنترنت</strong></li>
+                                <li>حاول <strong>تحديث الصفحة</strong> </li>
+                                <li>تأكد من <strong>صحة البيانات المُدخلة</strong></li>
+                                <li>راجع رسائل الخطأ المعروضة (إن وُجدت)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- خاتمة -->
+                <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(0, 0, 0, 0.5) 100%); padding: 25px; border-radius: 10px; border: 2px solid var(--gold); text-align: center; margin-top: 30px;">
+                    <h3 style="color: var(--gold); margin-bottom: 15px;">🎉 نتمنى لكم تجربة استخدام ممتعة وسلسة 🎉</h3>
+                    <p style="color: var(--white); font-size: 1.1rem; line-height: 1.8;">
+                        نظام إدارة فرن حسين الدليمي مُصمم لتسهيل عملك اليومي وتوفير معلومات دقيقة وفورية عن أداء الفرن.
+                        نتمنى أن يساعدك هذا النظام في تحقيق أفضل إنتاجية وربحية.
+                    </p>
+                    <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold; margin-top: 20px;">
+                        بالتوفيق والنجاح الدائم! 🍞✨
+                    </p>
+                </div>
+
+            </div>
         </div>
     </div>
 
@@ -77,6 +566,8 @@
             // تحديث البطاقات الرئيسية
             animateNumber('todayDough', stats.doughCount, 0);
             animateNumber('todayProfit', stats.profit, 0, true);
+            animateNumber('electricProfit', stats.electricProfit, 0, false); // ربح الكهربائي بالدينار
+            animateNumber('totalWithElectric', stats.totalProfitWithElectric, 0, false); // الإجمالي بالدينار
             animateNumber('todayExpenses', (stats.flourCost + stats.expenses), 0, true);
             animateNumber('todayNetProfit', stats.netProfit, 0, true);
         }
@@ -113,7 +604,48 @@
             // تحديث تلقائي كل 30 ثانية
             setInterval(updateDashboard, 30000);
         });
+
+        // وظيفة إظهار/إخفاء دليل الاستخدام
+        function toggleInstructions() {
+            const content = document.getElementById('instructionsContent');
+            const icon = document.getElementById('toggleIcon');
+            
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+                icon.style.transform = 'rotate(180deg)';
+                // Smooth scroll to instructions
+                setTimeout(() => {
+                    content.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
     </script>
+
+    <!-- Custom scrollbar style for instructions -->
+    <style>
+        #instructionsContent::-webkit-scrollbar {
+            width: 8px;
+        }
+        #instructionsContent::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        #instructionsContent::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 10px;
+        }
+        #instructionsContent::-webkit-scrollbar-thumb:hover {
+            background: var(--dark-gold);
+        }
+        .instruction-section {
+            margin-bottom: 30px;
+        }
+    </style>
 </body>
 </html>
 

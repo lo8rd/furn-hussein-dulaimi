@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>الصمون الكهربائي - فرن حسين الدليمي</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="512x512" href="dul.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="dul.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="dul.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="dul.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="dul.png">
+    <meta name="theme-color" content="#FFD700">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,7 +34,6 @@
                 <li><a href="differences.html">الفروقات</a></li>
                 <li><a href="dough_records.html">سجل العجنات</a></li>
                 <li><a href="expenses.html">المصاريف</a></li>
-                <li><a href="profit.html">الربح النهائي</a></li>
             </ul>
         </nav>
 
@@ -74,6 +82,56 @@
                     </div>
                 </div>
 
+                <!-- قسم التلف الكهربائي -->
+                <div style="margin-top: 30px; padding: 20px; background: var(--secondary-black); border-radius: 10px; border: 2px solid var(--danger);">
+                    <h3 style="color: var(--danger); margin-bottom: 15px; text-align: center;">
+                        🔻 قسم التلف الكهربائي
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="wasteJerqCount">تلف الچرك (عدد القطع)</label>
+                        <input type="number" id="wasteJerqCount" name="wasteJerqCount" min="0" value="0" placeholder="0">
+                        <small style="color: var(--light-gray); display: block; margin-top: 5px;">
+                            سعر القطعة: 250 دينار
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="wasteRoundCount">تلف الدائري (عدد القطع)</label>
+                        <input type="number" id="wasteRoundCount" name="wasteRoundCount" min="0" value="0" placeholder="0">
+                        <small style="color: var(--light-gray); display: block; margin-top: 5px;">
+                            التسعيرة: 3=500، 4=750، 6=1000
+                        </small>
+                    </div>
+
+                    <div class="cards-grid" style="margin-top: 15px;">
+                        <div class="card" style="background: rgba(220, 53, 69, 0.1); border: 1px solid var(--danger);">
+                            <div class="card-title" style="color: var(--danger);">تلف چرك</div>
+                            <div class="card-value" id="wasteJerqTotal" style="color: var(--danger);">0</div>
+                            <div class="card-label">دينار</div>
+                        </div>
+
+                        <div class="card" style="background: rgba(220, 53, 69, 0.1); border: 1px solid var(--danger);">
+                            <div class="card-title" style="color: var(--danger);">تلف دائري</div>
+                            <div class="card-value" id="wasteRoundTotal" style="color: var(--danger);">0</div>
+                            <div class="card-label">دينار</div>
+                        </div>
+
+                        <div class="card" style="background: rgba(220, 53, 69, 0.2); border: 2px solid var(--danger);">
+                            <div class="card-title" style="color: var(--danger);">إجمالي التلف</div>
+                            <div class="card-value" id="totalWaste" style="color: var(--danger); font-size: 2rem;">0</div>
+                            <div class="card-label">دينار</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- صافي الربح -->
+                <div class="card" style="margin-top: 20px; background: linear-gradient(135deg, var(--success) 0%, #1e7e34 100%); border: 3px solid var(--gold);">
+                    <div class="card-title" style="color: var(--white);">صافي الربح (بعد خصم التلف)</div>
+                    <div class="card-value" id="netProfit" style="color: var(--white); font-size: 3rem;">0</div>
+                    <div class="card-label" style="color: var(--white);">دينار</div>
+                </div>
+
                 <div class="btn-group">
                     <button type="submit" class="btn btn-success">حفظ البيانات</button>
                     <button type="button" class="btn btn-primary" onclick="resetForm()">مسح الحقول</button>
@@ -116,10 +174,10 @@
                         <tr>
                             <th>التاريخ</th>
                             <th>چرك</th>
-                            <th>ربح چرك</th>
                             <th>دائري</th>
-                            <th>ربح دائري</th>
-                            <th>الربح الكلي</th>
+                            <th>الربح الإجمالي</th>
+                            <th>التلف</th>
+                            <th>صافي الربح</th>
                             <th>إجراءات</th>
                         </tr>
                     </thead>
@@ -183,22 +241,41 @@
         // تعيين التاريخ الحالي تلقائياً
         document.getElementById('date').valueAsDate = new Date();
 
-        // حساب الربح تلقائياً عند التغيير
+        // حساب الربح والتلف تلقائياً عند التغيير
         document.getElementById('jerqCount').addEventListener('input', calculateProfit);
         document.getElementById('circleCount').addEventListener('input', calculateProfit);
+        document.getElementById('wasteJerqCount').addEventListener('input', calculateProfit);
+        document.getElementById('wasteRoundCount').addEventListener('input', calculateProfit);
 
         function calculateProfit() {
             const jerqCount = parseInt(document.getElementById('jerqCount').value) || 0;
             const circleCount = parseInt(document.getElementById('circleCount').value) || 0;
+            const wasteJerqCount = parseInt(document.getElementById('wasteJerqCount').value) || 0;
+            const wasteRoundCount = parseInt(document.getElementById('wasteRoundCount').value) || 0;
 
+            // حساب الربح
             const jerqProfit = jerqCount * 250;
             const circleProfit = db.calculateCirclePrice(circleCount);
             const totalProfit = jerqProfit + circleProfit;
+
+            // حساب التلف
+            const wasteJerqTotal = wasteJerqCount * 250;
+            const wasteRoundTotal = db.calculateCirclePrice(wasteRoundCount);
+            const totalWaste = wasteJerqTotal + wasteRoundTotal;
+
+            // صافي الربح
+            const netProfit = totalProfit - totalWaste;
 
             // عرض الأرقام مباشرة بدون أنيميشن (للمعاينة الفورية)
             document.getElementById('jerqProfit').textContent = formatNumber(jerqProfit);
             document.getElementById('circleProfit').textContent = formatNumber(circleProfit);
             document.getElementById('totalProfit').textContent = formatNumber(totalProfit);
+            
+            document.getElementById('wasteJerqTotal').textContent = formatNumber(wasteJerqTotal);
+            document.getElementById('wasteRoundTotal').textContent = formatNumber(wasteRoundTotal);
+            document.getElementById('totalWaste').textContent = formatNumber(totalWaste);
+            
+            document.getElementById('netProfit').textContent = formatNumber(netProfit);
         }
 
         // تحريك الأرقام (Animation)
@@ -226,7 +303,9 @@
             const formData = {
                 date: document.getElementById('date').value,
                 jerq_count: document.getElementById('jerqCount').value,
-                circle_count: document.getElementById('circleCount').value
+                circle_count: document.getElementById('circleCount').value,
+                waste_jerq_count: document.getElementById('wasteJerqCount').value || 0,
+                waste_round_count: document.getElementById('wasteRoundCount').value || 0
             };
 
             try {
@@ -258,6 +337,10 @@
             document.getElementById('jerqProfit').textContent = '0';
             document.getElementById('circleProfit').textContent = '0';
             document.getElementById('totalProfit').textContent = '0';
+            document.getElementById('wasteJerqTotal').textContent = '0';
+            document.getElementById('wasteRoundTotal').textContent = '0';
+            document.getElementById('totalWaste').textContent = '0';
+            document.getElementById('netProfit').textContent = '0';
         }
 
         // عرض رسالة تنبيه
@@ -292,20 +375,26 @@
                 return;
             }
 
-            tbody.innerHTML = records.map(record => `
-                <tr>
-                    <td>${record.date}</td>
-                    <td>${formatNumber(record.jerq_count)}</td>
-                    <td>${formatNumber(record.jerq_total)}</td>
-                    <td>${formatNumber(record.circle_count)}</td>
-                    <td>${formatNumber(record.circle_total)}</td>
-                    <td><strong style="color: var(--gold);">${formatNumber(record.total_profit_day)}</strong></td>
-                    <td>
-                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editRecord(${record.id})">تعديل</button>
-                        <button class="btn btn-danger" onclick="deleteRecord(${record.id})">حذف</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = records.map(record => {
+                const totalProfit = record.total_profit || (record.jerq_total + record.circle_total) || 0;
+                const totalWaste = record.total_waste || 0;
+                const netProfit = record.net_profit || (totalProfit - totalWaste);
+                
+                return `
+                    <tr>
+                        <td>${record.date}</td>
+                        <td>${formatNumber(record.jerq_count)} قطعة</td>
+                        <td>${formatNumber(record.circle_count)} قطعة</td>
+                        <td style="color: var(--gold);">${formatNumber(totalProfit)}</td>
+                        <td style="color: var(--danger);">${formatNumber(totalWaste)}</td>
+                        <td><strong style="color: var(--success);">${formatNumber(netProfit)}</strong></td>
+                        <td>
+                            <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editRecord(${record.id})">تعديل</button>
+                            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.9rem;" onclick="deleteRecord(${record.id})">حذف</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // تحميل إحصائيات اليوم
@@ -315,7 +404,10 @@
 
             const totalJerq = todayRecords.reduce((sum, r) => sum + r.jerq_count, 0);
             const totalCircle = todayRecords.reduce((sum, r) => sum + r.circle_count, 0);
-            const totalProfit = todayRecords.reduce((sum, r) => sum + r.total_profit_day, 0);
+            const totalProfit = todayRecords.reduce((sum, r) => {
+                const profit = r.net_profit || r.total_profit_day || r.total_profit || 0;
+                return sum + profit;
+            }, 0);
 
             document.getElementById('todayJerqCount').textContent = formatNumber(totalJerq);
             document.getElementById('todayCircleCount').textContent = formatNumber(totalCircle);
@@ -331,11 +423,14 @@
                 document.getElementById('date').value = record.date;
                 document.getElementById('jerqCount').value = record.jerq_count;
                 document.getElementById('circleCount').value = record.circle_count;
+                document.getElementById('wasteJerqCount').value = record.waste_jerq_count || 0;
+                document.getElementById('wasteRoundCount').value = record.waste_round_count || 0;
                 calculateProfit();
                 editingId = id;
                 
                 // التمرير للأعلى
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                showAlert('جاري التعديل... قم بتحديث القيم واضغط حفظ', 'info');
             }
         }
 

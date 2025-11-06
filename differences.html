@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>الفروقات - فرن حسين الدليمي</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="512x512" href="dul.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="dul.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="dul.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="dul.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="dul.png">
+    <meta name="theme-color" content="#FFD700">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,7 +34,6 @@
                 <li><a href="differences.html" class="active">الفروقات</a></li>
                 <li><a href="dough_records.html">سجل العجنات</a></li>
                 <li><a href="expenses.html">المصاريف</a></li>
-                <li><a href="profit.html">الربح النهائي</a></li>
             </ul>
         </nav>
 
@@ -215,11 +223,22 @@
             return typeMap[arabicType.trim()] || 'other';
         }
 
-        // دالة تحويل نوع الفروقات من الإنجليزية إلى العربية (للعرض)
-        function convertTypeToArabic(englishType) {
+        // دالة تحويل نوع الفروقات من الإنجليزية إلى العربية (للعرض في الجداول)
+        function convertTypeToArabicDisplay(englishType) {
             const typeMap = {
                 'waste': 'هدر/تلف',
                 'restaurant': 'مطاعم/محلات',
+                'other': 'أخرى'
+            };
+            
+            return typeMap[englishType] || englishType;
+        }
+
+        // دالة تحويل نوع الفروقات من الإنجليزية إلى العربية (للتعديل في النماذج)
+        function convertTypeToArabic(englishType) {
+            const typeMap = {
+                'waste': 'تلف',
+                'restaurant': 'مطعم',
                 'other': 'أخرى'
             };
             
@@ -341,7 +360,7 @@
                 return `
                     <tr>
                         <td>${group.date}</td>
-                        <td><strong style="color: var(--gold);">${convertTypeToArabic(group.type)}</strong></td>
+                        <td><strong style="color: var(--gold);">${convertTypeToArabicDisplay(group.type)}</strong></td>
                         <td><strong>${formatNumber(group.totalCount, 0)}</strong></td>
                         <td><strong style="color: var(--danger);">${formatThousands(group.totalAmount)}</strong></td>
                         <td>${group.count} ${group.count > 1 ? 'مرات' : 'مرة'}</td>
@@ -350,8 +369,8 @@
                                 `<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem; margin-bottom: 5px;" onclick="showDetails('${detailsKey}')">عرض التفاصيل</button><br>` 
                                 : ''}
                             ${group.count === 1 ? 
-                                `<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editRecord(${group.details[0].id})">تعديل</button>
-                                 <button class="btn btn-danger" onclick="deleteRecord(${group.details[0].id})">حذف</button>`
+                                `<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editRecord('${group.details[0].id}')">تعديل</button>
+                                 <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.9rem;" onclick="deleteRecord('${group.details[0].id}')">حذف</button>`
                                 : `<button class="btn btn-danger" onclick="deleteGroupDifferences('${detailsKey}')">حذف الكل</button>`
                             }
                         </td>
@@ -482,7 +501,7 @@
 
             content.innerHTML = `
                 <div style="margin-bottom: 20px; padding: 15px; background: var(--primary-black); border-radius: 10px;">
-                    <h3 style="color: var(--gold); margin-bottom: 10px;">${convertTypeToArabic(group.type)}</h3>
+                    <h3 style="color: var(--gold); margin-bottom: 10px;">${convertTypeToArabicDisplay(group.type)}</h3>
                     <p style="color: var(--light-gray);">التاريخ: ${group.date}</p>
                     <p style="color: var(--light-gray);">عدد المرات: ${group.count}</p>
                     <p style="color: var(--light-gray);">إجمالي الصمون: ${formatNumber(group.totalCount, 0)} صمون</p>
@@ -499,8 +518,8 @@
                             <div style="color: var(--danger); font-size: 1.2rem; margin-top: 5px;">${formatThousands((detail.total_value || detail.amount || 0))} دينار</div>
                         </div>
                         <div>
-                            <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.9rem; margin-left: 5px;" onclick="editDifferenceFromModal(${detail.id})">تعديل</button>
-                            <button class="btn btn-danger" style="padding: 5px 15px; font-size: 0.9rem;" onclick="deleteDifferenceFromModal(${detail.id})">حذف</button>
+                            <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.9rem; margin-left: 5px;" onclick="editDifferenceFromModal('${detail.id}')">تعديل</button>
+                            <button class="btn btn-danger" style="padding: 5px 15px; font-size: 0.9rem;" onclick="deleteDifferenceFromModal('${detail.id}')">حذف</button>
                         </div>
                     </div>
                 `).join('')}
@@ -572,13 +591,15 @@
             
             if (record) {
                 document.getElementById('date').value = record.date;
-                document.getElementById('type').value = record.type;
+                // Convert English type back to Arabic for display in the form
+                document.getElementById('type').value = convertTypeToArabic(record.type);
                 document.getElementById('count').value = (record.quantity || record.count || 0);
                 document.getElementById('displayAmount').textContent = formatThousands((record.total_value || record.amount || 0));
                 editingId = id;
                 
                 // التمرير للأعلى
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                showAlert('جاري التعديل... قم بتحديث القيم واضغط حفظ', 'info');
             }
         }
 
