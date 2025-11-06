@@ -389,8 +389,8 @@
                         <td style="color: var(--danger);">${formatNumber(totalWaste)}</td>
                         <td><strong style="color: var(--success);">${formatNumber(netProfit)}</strong></td>
                         <td>
-                            <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editRecord(${record.id})">تعديل</button>
-                            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.9rem;" onclick="deleteRecord(${record.id})">حذف</button>
+                            <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="editRecord('${record.id}')">تعديل</button>
+                            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.9rem;" onclick="deleteRecord('${record.id}')">حذف</button>
                         </td>
                     </tr>
                 `;
